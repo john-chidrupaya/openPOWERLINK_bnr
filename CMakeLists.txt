@@ -146,8 +146,7 @@ ENDIF (CFG_X86_DEMO_MN_QT)
 # Add subdirectory of MN service application
 IF (CFG_X86_APP_MN_SERVICE)
     ADD_SUBDIRECTORY(Examples/X86/Generic/app_mn_service)
-ENDIF (CFG_X86_DEMO_MN_QT)
-
+ENDIF (CFG_X86_APP_MN_SERVICE)
 
 # Add subdirectory of CN console demo application
 IF (CFG_X86_DEMO_CN_CONSOLE)

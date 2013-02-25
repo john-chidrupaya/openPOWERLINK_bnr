@@ -73,6 +73,8 @@ ENDIF (UNIX)
 SET (DEMO_SOURCES main.c
                   app.c
                   event.c
+                  parser.c
+                  commands.c
                   ${COMMON_SOURCE_DIR}/console/printlog.c
                   ${POWERLINK_SOURCE_DIR}/ObjDicts/${OBJDICT}/EplApiProcessImageSetup.c
                   ${POWERLINK_SOURCE_DIR}/EplStack/EplTgtConio.c
@@ -133,23 +135,23 @@ IF (WIN32)
     SOURCE_GROUP("Demo Application" FILES ${DEMO_SOURCES})
 ENDIF (WIN32)
 
-ADD_EXECUTABLE(demo_mn_console ${DEMO_SOURCES})
+ADD_EXECUTABLE(mn-service ${DEMO_SOURCES})
 
-SET_PROPERTY(TARGET demo_mn_console
+SET_PROPERTY(TARGET mn-service
              PROPERTY COMPILE_DEFINITIONS_DEBUG DEBUG;DEF_DEBUG_LVL=${CFG_DEBUG_LVL})
 
 IF (UNIX)
     IF (NOT CFG_KERNEL_STACK)
-        TARGET_LINK_LIBRARIES(demo_mn_console powerlink pcap pthread rt)
+        TARGET_LINK_LIBRARIES(mn-service powerlink pcap pthread rt)
     ELSE (NOT CFG_KERNEL_STACK)
-        TARGET_LINK_LIBRARIES(demo_mn_console pthread rt)
+        TARGET_LINK_LIBRARIES(mn-service pthread rt)
     ENDIF (NOT CFG_KERNEL_STACK)
 ELSEIF (WIN32)
-    TARGET_LINK_LIBRARIES(demo_mn_console openPOWERLINK wpcap iphlpapi)
+    TARGET_LINK_LIBRARIES(mn-service openPOWERLINK wpcap iphlpapi)
 ENDIF (UNIX)
 
 # add installation rules
-INSTALL(TARGETS demo_mn_console RUNTIME DESTINATION bin)
+INSTALL(TARGETS mn-service RUNTIME DESTINATION bin)
 INSTALL(FILES mnobd.cdc DESTINATION bin)
 
 IF (UNIX)

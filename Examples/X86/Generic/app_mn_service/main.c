@@ -43,6 +43,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // includes
 //------------------------------------------------------------------------------
 #include <Epl.h>
+#include "local-types.h"
 #include <stdio.h>
 #include <getopt/getopt.h>
 #include <app.h>
@@ -51,6 +52,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <console/console.h>
 #include <limits.h>
 #include <string.h>
+
+#include "parser.h"
+#include "commands.h"
 
 //============================================================================//
 //            G L O B A L   D E F I N I T I O N S                             //
@@ -91,7 +95,6 @@ void *powerlinkSyncThread(void * arg);
 
 int getopt(int, char * const [], const char *);
 
-void initEvents (UINT* pCycle_p, BOOL* pfGsOff_p);
 tEplKernel PUBLIC EplObdInitRam (tEplObdInitParam MEM* pIniEPL_C_ADR_INVALIDtParam_p);
 tEplKernel PUBLIC processEvents(tEplApiEventType EventType_p, tEplApiEventArg* pEventArg_p, void GENERIC* pUserArg_p);
 
@@ -112,13 +115,6 @@ typedef struct
     char*       pLogFile;
 } tOptions;
 
-typedef struct
-{
-    const char*     cmd;
-    const char*     description;
-    BOOL            (*cmdFunc)(void);
-} tCmdTbl;
-
 //------------------------------------------------------------------------------
 // local vars
 //------------------------------------------------------------------------------
@@ -126,33 +122,10 @@ typedef struct
 //------------------------------------------------------------------------------
 // local function prototypes
 //------------------------------------------------------------------------------
-static BOOL parseCommand(void);
-
-static BOOL printHelp(void);
-static BOOL exitApp(void);
-static BOOL resetStack(void);
-static BOOL setCycleError(void);
-static BOOL readSdo(void);
-static BOOL writeSdo(void);
-
 static int getOptions(int argc_p, char **argv_p, tOptions* pOpts_p);
 static tEplKernel initPowerlink(DWORD cycleLen_p, const BYTE* macAddr_p);
 static void loopMain(void);
 static void shutdownPowerlink(void);
-
-
-tCmdTbl commands_l[] =
-{
-    { "help",           "Print this help",              printHelp},
-    { "exit",           "Exit the application",         exitApp},
-    { "reset",          "Send NMT SW-Reset",            resetStack},
-    { "cycleerr",       "Set a cyle error",             setCycleError},
-    { "sdoread",        "Read an object through SDO",   readSdo},
-    { "sdowrite",       "Write an object through SDO",  writeSdo},
-    { NULL,             NULL,                           NULL},
-};
-
-
 
 //============================================================================//
 //            P U B L I C   F U N C T I O N S                                 //
@@ -188,7 +161,7 @@ int main(int argc, char **argv)
     initEvents(&opts.cycleLen, &fGsOff_l);
 
     printf("----------------------------------------------------\n");
-    printf("openPOWERLINK console MN DEMO application\n");
+    printf("openPOWERLINK MN Service application\n");
     printf("----------------------------------------------------\n");
 
     if ((ret = initPowerlink(opts.cycleLen, aMacAddr_g)) != kEplSuccessful)
@@ -200,6 +173,7 @@ int main(int argc, char **argv)
     loopMain();
 
 Exit:
+    cleanupEvents();
     shutdownPowerlink();
     shutdownApp();
     shutdownSystem();
@@ -358,7 +332,7 @@ static void loopMain(void)
     while (!fExit)
     {
         PRINTF("> ");
-        fExit = parseCommand();
+        fExit = parseCommand(getCommands());
     }
 
 #if (TARGET_SYSTEM == _WIN32_)
@@ -444,135 +418,5 @@ static int getOptions(int argc_p, char **argv_p, tOptions* pOpts_p)
     }
     return 0;
 }
-
-//------------------------------------------------------------------------------
-/**
-\brief  Parse for commands
-
-*/
-//------------------------------------------------------------------------------
-static BOOL parseCommand(void)
-{
-    char        command[120];
-    tCmdTbl*    pCmdEntry;
-
-    fgets (command, 120, stdin);
-    command[strlen(command)-1] = '\0';
-    pCmdEntry = &commands_l[0];
-    while (pCmdEntry->cmd != NULL)
-    {
-        if (strcmp(pCmdEntry->cmd, command) == 0)
-        {
-            return (pCmdEntry->cmdFunc());
-        }
-        pCmdEntry++;
-    }
-    printHelp();
-    return FALSE;
-}
-
-//------------------------------------------------------------------------------
-/**
-\brief  Print command help
-
-*/
-//------------------------------------------------------------------------------
-static BOOL printHelp(void)
-{
-    tCmdTbl*        pCmdEntry;
-
-    printf ("\nAvailable commands:\n-------------------\n");
-
-    pCmdEntry = &commands_l[0];
-    while(pCmdEntry->cmd != NULL)
-    {
-        printf ("%s - %s\n", pCmdEntry->cmd, pCmdEntry->description);
-        pCmdEntry++;
-    }
-    printf ("\n");
-    return FALSE;
-}
-
-//------------------------------------------------------------------------------
-/**
-\brief  Exit application
-
-*/
-//------------------------------------------------------------------------------
-static BOOL exitApp(void)
-{
-    return TRUE;
-}
-
-//------------------------------------------------------------------------------
-/**
-\brief  Reset the stack (SW Reset)
-
-*/
-//------------------------------------------------------------------------------
-static BOOL resetStack(void)
-{
-    tEplKernel  ret;
-
-    ret = EplApiExecNmtCommand(kEplNmtEventSwReset);
-    if (ret != kEplSuccessful)
-    {
-        return TRUE;
-    }
-    return FALSE;
-}
-
-//------------------------------------------------------------------------------
-/**
-\brief  Simulate a cycle error
-
-*/
-//------------------------------------------------------------------------------
-static BOOL setCycleError(void)
-{
-    tEplKernel  ret;
-
-    ret = EplApiExecNmtCommand(kEplNmtEventNmtCycleError);
-    if (ret != kEplSuccessful)
-    {
-        return TRUE;
-    }
-    return FALSE;
-}
-
-//------------------------------------------------------------------------------
-/**
-\brief  Do a SDO read
-
-*/
-//------------------------------------------------------------------------------
-static BOOL readSdo(void)
-{
-    tEplKernel  ret;
-    DWORD       oid;
-    WORD        sub;
-
-    printf ("Read a SDO object\n");
-
-    return FALSE;
-}
-
-//------------------------------------------------------------------------------
-/**
-\brief  Do a SDO write
-
-*/
-//------------------------------------------------------------------------------
-static BOOL writeSdo(void)
-{
-    tEplKernel  ret;
-    DWORD       oid;
-    WORD        sub;
-
-    printf ("Write a SDO object\n");
-
-    return FALSE;
-}
-
 
 ///\}

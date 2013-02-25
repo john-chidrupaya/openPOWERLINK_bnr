@@ -43,6 +43,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //------------------------------------------------------------------------------
 #include <Epl.h>
 #include <console/console.h>
+#include <semaphore.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <time.h>
+#include <unistd.h>
 
 //============================================================================//
 //            G L O B A L   D E F I N I T I O N S                             //
@@ -55,8 +60,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //------------------------------------------------------------------------------
 // module global vars
 //------------------------------------------------------------------------------
-static DWORD*  pCycle_l;
-static BOOL*    pfGsOff_l;
+static DWORD*           pCycle_l;
+static BOOL*            pfGsOff_l;
 
 //------------------------------------------------------------------------------
 // global function prototypes
@@ -69,7 +74,15 @@ static BOOL*    pfGsOff_l;
 //------------------------------------------------------------------------------
 // const defines
 //------------------------------------------------------------------------------
-
+#define timespecadd(vvp, uvp)                                           \
+        {                                                               \
+                (vvp)->tv_sec += (uvp)->tv_sec;                         \
+                (vvp)->tv_nsec += (uvp)->tv_nsec;                       \
+                if ((vvp)->tv_nsec >= 1000000000) {                     \
+                        (vvp)->tv_sec++;                                \
+                        (vvp)->tv_nsec -= 1000000000;                   \
+                }                                                       \
+        }
 //------------------------------------------------------------------------------
 // local types
 //------------------------------------------------------------------------------
@@ -107,11 +120,11 @@ static tEplKernel processCfmResultEvent(tEplApiEventType EventType_p,
                                         void GENERIC* pUserArg_p);
 #endif
 
-#if (((EPL_MODULE_INTEGRATION) & (EPL_MODULE_CFM)) == 0)
+//#if (((EPL_MODULE_INTEGRATION) & (EPL_MODULE_CFM)) == 0)
 static tEplKernel processSdoEvent(tEplApiEventType EventType_p,
                                   tEplApiEventArg* pEventArg_p,
                                   void GENERIC* pUserArg_p);
-#endif
+//#endif
 
 //============================================================================//
 //            P U B L I C   F U N C T I O N S                                 //
@@ -135,6 +148,14 @@ void initEvents (UINT* pCycle_p, BOOL* pfGsOff_p)
 {
     pCycle_l = pCycle_p;
     pfGsOff_l = pfGsOff_p;
+
+    mkfifo("/sdoFifo", S_IRUSR| S_IWUSR);
+
+}
+
+void cleanupEvents (void)
+{
+
 }
 
 //------------------------------------------------------------------------------
@@ -190,13 +211,13 @@ tEplKernel PUBLIC processEvents(tEplApiEventType EventType_p,
             break;
 #endif
 
-#if (((EPL_MODULE_INTEGRATION) & (EPL_MODULE_CFM)) == 0)
+//#if (((EPL_MODULE_INTEGRATION) & (EPL_MODULE_CFM)) == 0)
         // Configuration Manager is not available,
         // so process SDO events
         case kEplApiEventSdo:
             ret = processSdoEvent(EventType_p, pEventArg_p, pUserArg_p);
             break;
-#endif
+//#endif
 
         default:
             break;
@@ -404,7 +425,7 @@ static tEplKernel processHistoryEvent(tEplApiEventType EventType_p,
             (WORD)pHistoryEntry->m_abAddInfo[4], (WORD)pHistoryEntry->m_abAddInfo[5],
             (WORD)pHistoryEntry->m_abAddInfo[6], (WORD)pHistoryEntry->m_abAddInfo[7]);
 
-    FTRACE_MARKER("HistoryEntry: Type=0x%04X Code=0x%04X (0x%02X %02X %02X %02X %02X %02X %02X %02X)\n",
+    FTRACE_MARKER("HistoryEntry:m_pUserArg Type=0x%04X Code=0x%04X (0x%02X %02X %02X %02X %02X %02X %02X %02X)\n",
             pHistoryEntry->m_wEntryType, pHistoryEntry->m_wErrorCode,
             (WORD)pHistoryEntry->m_abAddInfo[0], (WORD)pHistoryEntry->m_abAddInfo[1],
             (WORD)pHistoryEntry->m_abAddInfo[2], (WORD)pHistoryEntry->m_abAddInfo[3],
@@ -564,7 +585,7 @@ static tEplKernel processCfmResultEvent(tEplApiEventType EventType_p,
 }
 #endif
 
-#if (((EPL_MODULE_INTEGRATION) & (EPL_MODULE_CFM)) == 0)
+
 //------------------------------------------------------------------------------
 /**
 \brief  Process SDO events
@@ -584,10 +605,44 @@ static tEplKernel processSdoEvent(tEplApiEventType EventType_p,
 {
     tEplSdoComFinished*       pSdo = &pEventArg_p->m_Sdo;
     tEplKernel                ret = kEplSuccessful;
+    sem_t*                    sdoSem;
 
     UNUSED_PARAMETER(EventType_p);
     UNUSED_PARAMETER(pUserArg_p);
 
+#if 0
+    printf ("Sdo event! %p\n", pSdo->m_pUserArg);
+    if (pSdo->m_pUserArg == (void *)0x15f4329a)
+    {
+        if ((sdoSem = sem_open("SdoSem", 0)) == SEM_FAILED)
+        {
+            fprintf (stderr, "%s() creating sem failed!\n", __func__);
+            return kEplNoResource;
+        }
+        sem_post(sdoSem);
+        sem_close(sdoSem);
+
+        if ((ret = EplApiFreeSdoChannel(pSdo->m_SdoComConHdl)) != kEplSuccessful)
+        {
+            return ret;
+        }
+    }
+#endif
+
+    if (pSdo->m_pUserArg == (void *)0x15f4329a)
+    {
+        int fd;
+
+        if ((fd = open("/sdoFifo", O_WRONLY)) == -1)
+        {
+            fprintf(stderr, "Error opening fifo\n");
+            return ret;
+        }
+        write (fd, pSdo, sizeof(tEplSdoComFinished));
+        close (fd);
+    }
+
+#if 0
     // SDO transfer finished
     if ((ret = EplApiFreeSdoChannel(pSdo->m_SdoAccessType)) != kEplSuccessful)
     {
@@ -602,9 +657,11 @@ static tEplKernel processSdoEvent(tEplApiEventType EventType_p,
     {   // indicate configuration error CN
         ret = EplApiMnTriggerStateChange(pSdo->m_uiNodeId, kEplNmtNodeCommandConfErr);
     }
+#endif
     return ret;
 }
 
+#if (((EPL_MODULE_INTEGRATION) & (EPL_MODULE_CFM)) == 0)
 //------------------------------------------------------------------------------
 /**
 \brief  Set default node assignment
