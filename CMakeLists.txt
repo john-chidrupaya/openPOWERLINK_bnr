@@ -81,6 +81,8 @@ SET(CFG_DEBUG_LVL "0xEC000000L" CACHE STRING "Debug Level for debug output")
 
 CMAKE_DEPENDENT_OPTION (CFG_X86_DEMO_MN_CONSOLE "Build process image based console demo application" ON
                         "CFG_POWERLINK_MN" OFF)
+CMAKE_DEPENDENT_OPTION (CFG_X86_APP_MN_SERVICE "Build MN service and test application" ON
+                        "CFG_POWERLINK_MN" OFF)
 CMAKE_DEPENDENT_OPTION (CFG_X86_DEMO_MN_QT "Build process image based QT demo application" OFF
                         "CFG_POWERLINK_MN;QT4_FOUND" OFF)
 CMAKE_DEPENDENT_OPTION (CFG_X86_DEMO_CN_CONSOLE "Build CN console demo application" ON
@@ -140,6 +142,12 @@ ENDIF (CFG_X86_DEMO_MN_CONSOLE)
 IF (CFG_X86_DEMO_MN_QT)
     ADD_SUBDIRECTORY(Examples/X86/Generic/demo_mn_qt)
 ENDIF (CFG_X86_DEMO_MN_QT)
+
+# Add subdirectory of MN service application
+IF (CFG_X86_APP_MN_SERVICE)
+    ADD_SUBDIRECTORY(Examples/X86/Generic/app_mn_service)
+ENDIF (CFG_X86_DEMO_MN_QT)
+
 
 # Add subdirectory of CN console demo application
 IF (CFG_X86_DEMO_CN_CONSOLE)
