@@ -101,11 +101,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //------------------------------------------------------------------------------
 static int waitSdoEvent(tEplSdoComFinished* comFinished_p);
 
-static BOOL exitApp(void);
-static BOOL resetStack(void);
-static BOOL setCycleError(void);
-static BOOL readSdo(void);
-static BOOL writeSdo(void);
+static BOOL exitApp(int argc, char** argv);
+static BOOL resetStack(int argc, char** argv);
+static BOOL setCycleError(int argc, char** argv);
+static BOOL readSdo(int argc, char** argv);
+static BOOL writeSdo(int argc, char** argv);
 
 tCmdTbl commands_g[] =
 {
@@ -139,13 +139,101 @@ tCmdTbl* getCommands(void)
 /// \name Private Functions
 /// \{
 
+static void printData(UINT32 oid, UINT32 sub, char* data, UINT32 len)
+{
+    tEplObdType         type;
+
+    EplObdGetType(oid, sub, &type);
+
+    switch (type)
+    {
+        case kEplObdTypInt8:
+            printf ("Data: %02Xh (%d)\n", *(INT8*)data);
+            break;
+
+        case kEplObdTypUInt8:
+            printf ("Data: %02Xh (%d)\n", *(UINT8*)data);
+            break;
+
+        case kEplObdTypInt16:
+            printf ("Data: %04Xh (%d)\n", *(INT16*)data);
+            break;
+
+        case kEplObdTypUInt16:
+            printf ("Data: %04Xh (%d)\n", *(UINT16*)data);
+            break;
+
+        case kEplObdTypInt32:
+            printf ("Data: %08Xh (%d)\n", *(INT32*)data);
+            break;
+
+        case kEplObdTypUInt32:
+            printf ("Data: %08Xh (%d)\n", *(UINT32*)data);
+            break;
+
+        default:
+            printf ("Unknown datatype!\n");
+            break;
+    }
+}
+
+
+static tEplKernel getData(UINT32 oid, UINT32 sub, UINT32* data, UINT32 *len)
+{
+    tEplKernel          ret = kEplSuccessful;
+    tEplObdType         type;
+
+    EplObdGetType(oid, sub, &type);
+
+    switch (type)
+    {
+        case kEplObdTypInt8:
+            *data = readUint("8-Bit Data", 0x00, 0xFF, 16);
+            *len = 1;
+            break;
+
+        case kEplObdTypUInt8:
+            *data = readUint("8-Bit Data", 0x00, 0xFF, 16);
+            *len = 1;
+            break;
+
+        case kEplObdTypInt16:
+            *data = readUint("16-Bit Data", 0x00, 0xFFFF, 16);
+            *len = 2;
+            break;
+
+        case kEplObdTypUInt16:
+            *data = readUint("16-Bit Data", 0x00, 0xFFFF, 16);
+            *len = 2;
+            break;
+
+        case kEplObdTypInt32:
+            *data = readUint("32-Bit Data", 0x00, 0xFFFFFFFF, 16);
+            *len = 4;
+            break;
+
+        case kEplObdTypUInt32:
+            *data = readUint("32-Bit Data", 0x00, 0xFFFFFFFF, 16);
+            *len = 4;
+            break;
+
+        default:
+            printf ("Unknown datatype!\n");
+            ret = kEplApiInvalidParam;
+            break;
+    }
+    return ret;
+}
+
+
+
 //------------------------------------------------------------------------------
 /**
 \brief  Exit application
 
 */
 //------------------------------------------------------------------------------
-static BOOL exitApp(void)
+static BOOL exitApp(int argc, char** argv)
 {
     return TRUE;
 }
@@ -156,7 +244,7 @@ static BOOL exitApp(void)
 
 */
 //------------------------------------------------------------------------------
-static BOOL resetStack(void)
+static BOOL resetStack(int argc, char** argv)
 {
     tEplKernel  ret;
 
@@ -174,7 +262,7 @@ static BOOL resetStack(void)
 
 */
 //------------------------------------------------------------------------------
-static BOOL setCycleError(void)
+static BOOL setCycleError(int argc, char** argv)
 {
     tEplKernel  ret;
 
@@ -192,7 +280,7 @@ static BOOL setCycleError(void)
 
 */
 //------------------------------------------------------------------------------
-static BOOL readSdo(void)
+static BOOL readSdo(int argc, char**argv)
 {
     tEplKernel          ret;
     UINT32              oid;
@@ -200,18 +288,27 @@ static BOOL readSdo(void)
     UINT32              nodeId;
     tEplSdoComConHdl    comHdl;
     tEplSdoComFinished  comFinished;
-    UINT32              data;
+    char                data[256];
     UINT32              size;
     sem_t*              sdoSem;
 
-    printf ("Read a SDO object\n");
-    nodeId  = readUint("NodeID", 1, 239, 10);
-    oid = readUint("Object Index", 0x1000, 0xFFFF, 16);
-    sub = readUint("SubIndex", 0, 255, 10);
+    if (argc != 4)
+    {
+        printf ("Usage: sdoread <NODE> <Index> <SubIndex>\n");
+        return FALSE;
+    }
+
+    nodeId = (UINT32)strtoul(argv[1], NULL, 10);
+    if (strncmp(argv[2], "0x", 2) == 0)
+        oid = (UINT32)strtoul(argv[2], NULL, 16);
+    else
+        oid = (UINT32)strtoul(argv[2], NULL, 10);
+
+    sub = (UINT32)strtoul(argv[3], NULL, 10);
+
+    printf ("Read a SDO object:\n");
 
     EPL_MEMSET(&comFinished, 0, sizeof(tEplSdoComFinished));
-
-    printf ("Read object 0x%04x/%d from node %d\n", oid, sub, nodeId);
 
     if ((sdoSem = sem_open("SdoSem", O_CREAT, S_IRWXG, 0)) == SEM_FAILED)
     {
@@ -220,33 +317,31 @@ static BOOL readSdo(void)
     }
 
     size = sizeof(UINT32);
-    ret = EplApiReadObject(&comHdl, nodeId, oid, sub, &data, &size, kEplSdoTypeAsnd, (void *)0x15f4329a);
+    ret = EplApiReadObject(&comHdl, nodeId, oid, sub, data, &size, kEplSdoTypeAsnd, (void *)0x15f4329a);
     if (ret == kEplSuccessful)
     {
-        printf( "Node: %d\tIndex: %.4X\tSubIndex: %d:\t0x%.4X\n",
-                nodeId, oid, sub, data);
+        printf( "Reading Node:%d, Index:%.4X, SubIndex:%d\n",
+                nodeId, oid, sub);
+        printData(oid, sub, data, size);
     }
     else if (ret == kEplApiTaskDeferred)
     {
-        printf( "Node: %d\tIndex: %.4X\tSubIndex: %d:\tdeferred\n",
+        printf( "Reading Node:%d, Index:%.4X, SubIndex:%d ...\n",
                 nodeId, oid, sub);
         if (waitSdoEvent(&comFinished) == 0)
         {
-            printf ("User arg: %p\n", comFinished.m_pUserArg);
-            printf ("Transfered bytes: %d\n", comFinished.m_uiTransferredByte);
-            printf ("Abort Code: %08x\n", comFinished.m_dwAbortCode);
-            printf ("Data = %d\n", data);
+            printf ("Received %d Bytes - AbortCode:0x%08X\n", comFinished.m_uiTransferredByte, comFinished.m_dwAbortCode);
+            if (comFinished.m_uiTransferredByte > 0)
+                printData(oid, sub, data, comFinished.m_uiTransferredByte);
+            else
+                printf ("Read error!\n");
         }
         else
-        {
             printf ("Read error!\n");
-        }
     }
     else
-    {
         printf( "Node: %d\tIndex: %.4X\tSubIndex: %d:\tfailed with error %X\n",
                 nodeId, oid, sub, ret);
-    }
 
     sem_close(sdoSem);
     sem_unlink("SdoSem");
@@ -259,14 +354,65 @@ static BOOL readSdo(void)
 
 */
 //------------------------------------------------------------------------------
-static BOOL writeSdo(void)
+static BOOL writeSdo(int argc, char** argv)
 {
-    tEplKernel  ret;
-    DWORD       oid;
-    WORD        sub;
+    tEplKernel          ret;
+    DWORD               oid;
+    WORD                sub;
+    UINT32              nodeId;
+    tEplSdoComConHdl    comHdl;
+    tEplSdoComFinished  comFinished;
+    UINT32              data;
+    UINT32              size;
+    sem_t*              sdoSem;
+
 
     printf ("Write a SDO object\n");
+    nodeId  = readUint("NodeID", 0, 239, 10);
+    oid = readUint("Object Index", 0x1000, 0xFFFF, 16);
+    sub = readUint("SubIndex", 0, 255, 10);
 
+    if((ret = getData(oid, sub, &data, &size)) != kEplSuccessful)
+    {
+        return FALSE;
+    }
+
+    if ((sdoSem = sem_open("SdoSem", O_CREAT, S_IRWXG, 0)) == SEM_FAILED)
+    {
+        fprintf (stderr, "%s() creating sem failed!\n", __func__);
+        return FALSE;
+    }
+
+    EPL_MEMSET(&comFinished, 0, sizeof(tEplSdoComFinished));
+
+    if ((ret = EplApiWriteObject(&comHdl, nodeId, oid, sub, &data, size, kEplSdoTypeAsnd, (void *)0xdeadbeef)) == kEplSuccessful)
+    {
+        printf ("Data successfully written!\n");
+    }
+    else
+    {
+        if (ret == kEplApiTaskDeferred)
+        {
+            printf( "Writing Node:%d, Index:%.4X, SubIndex:%d ...\n",
+                    nodeId, oid, sub);
+            if (waitSdoEvent(&comFinished) == 0)
+            {
+                printf ("Transfered %d Bytes:\n", comFinished.m_uiTransferredByte);
+                printf ("Abort Code: %08x\n", comFinished.m_dwAbortCode);
+                if (comFinished.m_uiTransferredByte > 0)
+                    printf ("Ok!\n");
+                else
+                    printf ("Write error!\n");
+            }
+            else
+            {
+                printf ("Write error!\n");
+            }
+        }
+    }
+
+    sem_close(sdoSem);
+    sem_unlink("SdoSem");
     return FALSE;
 }
 

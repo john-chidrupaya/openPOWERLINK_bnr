@@ -88,6 +88,26 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //            P U B L I C   F U N C T I O N S                                 //
 //============================================================================//
 
+int parseCmdLine(char* command, int *argc, char** argv)
+{
+    char        delimiter[] = " \n";
+    char*       ptr;
+    int         i;
+
+    i = 0;
+    ptr = strtok(command, delimiter);
+    argv[i] = ptr;
+    while(ptr != NULL)
+    {
+        i++;
+        ptr = strtok(NULL, delimiter);
+        argv[i] = ptr;
+    }
+    *argc = i;
+    return i;
+}
+
+
 //------------------------------------------------------------------------------
 /**
 \brief  Parse for commands
@@ -98,15 +118,18 @@ BOOL parseCommand(tCmdTbl* pCommands_p)
 {
     char        command[120];
     tCmdTbl*    pCmdEntry;
+    int         argc;
+    char*       argv[10];
 
     fgets (command, 120, stdin);
-    command[strlen(command)-1] = '\0';
+    parseCmdLine(command, &argc, argv);
+
     pCmdEntry = pCommands_p;
     while (pCmdEntry->cmd != NULL)
     {
-        if (strcmp(pCmdEntry->cmd, command) == 0)
+        if (strcmp(pCmdEntry->cmd, argv[0]) == 0)
         {
-            return (pCmdEntry->cmdFunc());
+            return (pCmdEntry->cmdFunc(argc, argv));
         }
         pCmdEntry++;
     }
@@ -152,7 +175,7 @@ UINT32 readUint(char* strName_p, UINT32 low_p, UINT32 high_p, int base_p)
     fInputValid  = 0;
     do
     {
-        printf("Enter %s: ", strName_p);
+        printf("Enter %s > ", strName_p);
         fgets(buffer, sizeof(buffer), stdin);
         input = (UINT32)strtoul(buffer, &pEnd, base_p);
         if ((input >= low_p) && (input <= high_p))

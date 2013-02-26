@@ -36,7 +36,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ------------------------------------------------------------------------------*/
 
-#ifndef _INC_parser_H_ 
+#ifndef _INC_parser_H_
 #define _INC_parser_H_
 
 //------------------------------------------------------------------------------
@@ -57,7 +57,7 @@ typedef struct
 {
     const char*     cmd;
     const char*     description;
-    BOOL            (*cmdFunc)(void);
+    BOOL            (*cmdFunc)(int argc, char** argv);
 } tCmdTbl;
 
 //------------------------------------------------------------------------------

@@ -611,7 +611,7 @@ static tEplKernel processSdoEvent(tEplApiEventType EventType_p,
     UNUSED_PARAMETER(pUserArg_p);
 
 #if 0
-    printf ("Sdo event! %p\n", pSdo->m_pUserArg);
+    //printf ("Sdo event! %p\n", pSdo->m_pUserArg);
     if (pSdo->m_pUserArg == (void *)0x15f4329a)
     {
         if ((sdoSem = sem_open("SdoSem", 0)) == SEM_FAILED)
@@ -629,7 +629,8 @@ static tEplKernel processSdoEvent(tEplApiEventType EventType_p,
     }
 #endif
 
-    if (pSdo->m_pUserArg == (void *)0x15f4329a)
+    if ((pSdo->m_pUserArg == (void *)0x15f4329a) ||
+        (pSdo->m_pUserArg == (void *)0xdeadbeef))
     {
         int fd;
 
