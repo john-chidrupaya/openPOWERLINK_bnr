@@ -56,9 +56,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 typedef struct
 {
     const char*     cmd;
+    const char*     usage;
     const char*     description;
-    BOOL            (*cmdFunc)(int argc, char** argv);
+    BOOL            (*cmdFunc)(int argc, char** argv, UINT32);
+    UINT32          param;
 } tCmdTbl;
+
+typedef struct
+{
+    const char*     typeStr;
+    tEplObdType     type;
+    size_t          len;
+}tCmdDataType;
 
 //------------------------------------------------------------------------------
 // function prototypes
@@ -71,6 +80,7 @@ extern "C" {
 BOOL parseCommand(tCmdTbl* pCommands_p);
 BOOL printHelp(void);
 UINT32 readUint(char* strName_p, UINT32 low_p, UINT32 high_p, int base_p);
+void parseDataType(const char* typeStr_p, tEplObdType* type_p, size_t* len_p);
 
 #ifdef __cplusplus
 }

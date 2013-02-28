@@ -178,6 +178,8 @@ tEplKernel processSync(void)
     if (ret != kEplSuccessful)
         return ret;
 
+#if 0
+
     cnt_l++;
 
     nodeVar_l[0].input = AppProcessImageOut_g.CN1_M00_Digital_Input_8_Bit_Byte_1;
@@ -231,6 +233,7 @@ tEplKernel processSync(void)
     AppProcessImageIn_g.CN1_M00_Digital_Ouput_8_Bit_Byte_1 = nodeVar_l[0].leds;
     AppProcessImageIn_g.CN32_M00_Digital_Ouput_8_Bit_Byte_1 = nodeVar_l[1].leds;
     AppProcessImageIn_g.CN110_M00_Digital_Ouput_8_Bit_Byte_1 = nodeVar_l[2].leds;
+#endif
 
     return ret;
 }
@@ -262,11 +265,10 @@ static tEplKernel initProcessImage(void)
     AppProcessImageCopyJob_g.m_uiPriority = 0;
     AppProcessImageCopyJob_g.m_In.m_pPart = &AppProcessImageIn_g;
     AppProcessImageCopyJob_g.m_In.m_uiOffset = 0;
-    AppProcessImageCopyJob_g.m_In.m_uiSize = sizeof (AppProcessImageIn_g);
+    AppProcessImageCopyJob_g.m_In.m_uiSize = 0;//sizeof (AppProcessImageIn_g);
     AppProcessImageCopyJob_g.m_Out.m_pPart = &AppProcessImageOut_g;
     AppProcessImageCopyJob_g.m_Out.m_uiOffset = 0;
-    AppProcessImageCopyJob_g.m_Out.m_uiSize = sizeof (AppProcessImageOut_g);
-
+    AppProcessImageCopyJob_g.m_Out.m_uiSize = 0;//sizeof (AppProcessImageOut_g);
 
     ret = EplApiProcessImageAlloc(sizeof (AppProcessImageIn_g), sizeof (AppProcessImageOut_g), 2, 2);
     if (ret != kEplSuccessful)

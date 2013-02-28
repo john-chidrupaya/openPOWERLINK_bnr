@@ -43,6 +43,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //------------------------------------------------------------------------------
 #include <Epl.h>
 #include <console/console.h>
+#include <termios.h>
 #include "local-types.h"
 #include "parser.h"
 #include "commands.h"
@@ -79,6 +80,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //------------------------------------------------------------------------------
 // local vars
 //------------------------------------------------------------------------------
+
+tCmdDataType typeTbl_l[] =
+{
+    {"s8",      kEplObdTypInt8,             1 },
+    {"u8",      kEplObdTypUInt8,            1 },
+    {"s16",     kEplObdTypInt16,            2 },
+    {"u16",     kEplObdTypUInt16,           2 },
+    {"s32",     kEplObdTypInt32,            4 },
+    {"u32",     kEplObdTypUInt32,           4 },
+    {NULL,      0,                          0 }
+};
 
 //------------------------------------------------------------------------------
 // local function prototypes
@@ -123,13 +135,15 @@ BOOL parseCommand(tCmdTbl* pCommands_p)
 
     fgets (command, 120, stdin);
     parseCmdLine(command, &argc, argv);
+    if (argv[0] == NULL)
+        return FALSE;
 
     pCmdEntry = pCommands_p;
     while (pCmdEntry->cmd != NULL)
     {
         if (strcmp(pCmdEntry->cmd, argv[0]) == 0)
         {
-            return (pCmdEntry->cmdFunc(argc, argv));
+            return (pCmdEntry->cmdFunc(argc, argv, pCmdEntry->param));
         }
         pCmdEntry++;
     }
@@ -152,7 +166,7 @@ BOOL printHelp(void)
     pCmdEntry = getCommands();
     while(pCmdEntry->cmd != NULL)
     {
-        printf ("%s - %s\n", pCmdEntry->cmd, pCmdEntry->description);
+        printf ("%s - %s\n", pCmdEntry->usage, pCmdEntry->description);
         pCmdEntry++;
     }
     printf ("\n");
@@ -192,6 +206,32 @@ UINT32 readUint(char* strName_p, UINT32 low_p, UINT32 high_p, int base_p)
     } while(fInputValid != 1);
 
     return  input;
+}
+
+//------------------------------------------------------------------------------
+/**
+\brief  Parse data type
+
+*/
+//------------------------------------------------------------------------------
+void parseDataType(const char* typeStr_p, tEplObdType* type_p, size_t* len_p)
+{
+    tCmdDataType*        pTypeTbl;
+
+    pTypeTbl = typeTbl_l;
+    while(pTypeTbl->typeStr != NULL)
+    {
+        if (strcmp(pTypeTbl->typeStr, typeStr_p) == 0)
+        {
+            *type_p = pTypeTbl->type;
+            *len_p = pTypeTbl->len;
+            return;
+        }
+        pTypeTbl++;
+    }
+    *type_p = 0;
+    *len_p = 0;
+    return;
 }
 
 //============================================================================//

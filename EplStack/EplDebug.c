@@ -89,6 +89,12 @@ typedef struct
     char                *m_sName;
 } tEplEmergErrCodeInfo;
 
+typedef struct
+{
+    DWORD               abortCode;
+    char*               sAbortCode;
+} tEplAbortCodeInfo;
+
 //=========================================================================//
 // Module global vars                                                      //
 //=========================================================================//
@@ -523,6 +529,39 @@ static char *EplSdoComConStateStr_g[] =
     "LowerLayerAbort",          // 0x05
 };
 
+static tEplAbortCodeInfo abortCodeInfo_g[] =
+{
+    { EPL_SDOAC_TIME_OUT,                          "EPL_SDOAC_TIME_OUT" },
+    { EPL_SDOAC_UNKNOWN_COMMAND_SPECIFIER,         "EPL_SDOAC_UNKNOWN_COMMAND_SPECIFIER" },
+    { EPL_SDOAC_INVALID_BLOCK_SIZE,                "EPL_SDOAC_INVALID_BLOCK_SIZE" },
+    { EPL_SDOAC_INVALID_SEQUENCE_NUMBER,           "EPL_SDOAC_INVALID_SEQUENCE_NUMBER" },
+    { EPL_SDOAC_OUT_OF_MEMORY,                     "EPL_SDOAC_OUT_OF_MEMORY" },
+    { EPL_SDOAC_UNSUPPORTED_ACCESS,                "EPL_SDOAC_UNSUPPORTED_ACCESS" },
+    { EPL_SDOAC_READ_TO_WRITE_ONLY_OBJ,            "EPL_SDOAC_READ_TO_WRITE_ONLY_OBJ" },
+    { EPL_SDOAC_WRITE_TO_READ_ONLY_OBJ,            "EPL_SDOAC_WRITE_TO_READ_ONLY_OBJ" },
+    { EPL_SDOAC_OBJECT_NOT_EXIST,                  "EPL_SDOAC_OBJECT_NOT_EXIST" },
+    { EPL_SDOAC_OBJECT_NOT_MAPPABLE,               "EPL_SDOAC_OBJECT_NOT_MAPPABLE" },
+    { EPL_SDOAC_PDO_LENGTH_EXCEEDED,               "EPL_SDOAC_PDO_LENGTH_EXCEEDED" },
+    { EPL_SDOAC_GEN_PARAM_INCOMPATIBILITY,         "EPL_SDOAC_GEN_PARAM_INCOMPATIBILITY" },
+    { EPL_SDOAC_INVALID_HEARTBEAT_DEC,             "EPL_SDOAC_INVALID_HEARTBEAT_DEC" },
+    { EPL_SDOAC_GEN_INTERNAL_INCOMPATIBILITY,      "EPL_SDOAC_GEN_INTERNAL_INCOMPATIBILITY" },
+    { EPL_SDOAC_ACCESS_FAILED_DUE_HW_ERROR,        "EPL_SDOAC_ACCESS_FAILED_DUE_HW_ERROR" },
+    { EPL_SDOAC_DATA_TYPE_LENGTH_NOT_MATCH,        "EPL_SDOAC_DATA_TYPE_LENGTH_NOT_MATCH" },
+    { EPL_SDOAC_DATA_TYPE_LENGTH_TOO_HIGH,         "EPL_SDOAC_DATA_TYPE_LENGTH_TOO_HIGH" },
+    { EPL_SDOAC_DATA_TYPE_LENGTH_TOO_LOW,          "EPL_SDOAC_DATA_TYPE_LENGTH_TOO_LOW" },
+    { EPL_SDOAC_SUB_INDEX_NOT_EXIST,               "EPL_SDOAC_SUB_INDEX_NOT_EXIST" },
+    { EPL_SDOAC_VALUE_RANGE_EXCEEDED,              "EPL_SDOAC_VALUE_RANGE_EXCEEDED" },
+    { EPL_SDOAC_VALUE_RANGE_TOO_HIGH,              "EPL_SDOAC_VALUE_RANGE_TOO_HIGH" },
+    { EPL_SDOAC_VALUE_RANGE_TOO_LOW,               "EPL_SDOAC_VALUE_RANGE_TOO_LOW" },
+    { EPL_SDOAC_MAX_VALUE_LESS_MIN_VALUE,          "EPL_SDOAC_MAX_VALUE_LESS_MIN_VALUE" },
+    { EPL_SDOAC_GENERAL_ERROR,                     "EPL_SDOAC_GENERAL_ERROR" },
+    { EPL_SDOAC_DATA_NOT_TRANSF_OR_STORED,         "EPL_SDOAC_DATA_NOT_TRANSF_OR_STORED" },
+    { EPL_SDOAC_DATA_NOT_TRANSF_DUE_LOCAL_CONTROL, "EPL_SDOAC_DATA_NOT_TRANSF_DUE_LOCAL_CONTROL" },
+    { EPL_SDOAC_DATA_NOT_TRANSF_DUE_DEVICE_STATE,  "EPL_SDOAC_DATA_NOT_TRANSF_DUE_DEVICE_STATE" },
+    { EPL_SDOAC_OBJECT_DICTIONARY_NOT_EXIST,       "EPL_SDOAC_OBJECT_DICTIONARY_NOT_EXIST" },
+    { EPL_SDOAC_CONFIG_DATA_EMPTY,                 "EPL_SDOAC_CONFIG_DATA_EMPTY" },
+    { 0,                                           "EPL_SDOAC_OK" }
+};
 
 //=========================================================================//
 // Module internal prototypes                                              //
@@ -831,6 +870,34 @@ const char * PUBLIC EplGetEmergErrCodeStr( WORD EmergErrCode_p )
     return eplInvalidStr_g;
 }
 
+//---------------------------------------------------------------------------
+//
+// Function:    EplGetAbortCodeStr()
+//
+// Description: returns the string of the specified abort code
+//
+// Parameters:  nmtEvent_p            event
+//
+// Returns:     event string
+//---------------------------------------------------------------------------
+char * PUBLIC EplGetAbortCodeStr(DWORD abortCode_p)
+{
+    tEplAbortCodeInfo*      pEntry;
+    unsigned int            i;
+
+    pEntry = abortCodeInfo_g;
+    for (i = 0; i < tabentries(abortCodeInfo_g); i++)
+    {
+        if (pEntry->abortCode == abortCode_p)
+        {
+            return pEntry->sAbortCode;
+        }
+        pEntry++;
+    }
+    return eplInvalidStr_g;
+}
+
+
 //=========================================================================//
 //                                                                         //
 //          P R I V A T E   D E F I N I T I O N S                          //
@@ -848,8 +915,7 @@ const char * PUBLIC EplGetEmergErrCodeStr( WORD EmergErrCode_p )
 // Returns:     -1, 0, or 1 if event id is smaller, equal or greater
 //
 //---------------------------------------------------------------------------
-static int
-EplDebugCompareApiEvent( const void *pvKey, const void *pvArray )
+static int EplDebugCompareApiEvent( const void *pvKey, const void *pvArray )
 {
     tApiEventInfo    *pKey      = (tApiEventInfo *) pvKey;
     tApiEventInfo    *pArray    = (tApiEventInfo *) pvArray;
