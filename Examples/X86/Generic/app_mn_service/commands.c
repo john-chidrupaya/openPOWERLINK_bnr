@@ -51,6 +51,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "local-types.h"
 #include "parser.h"
 #include "commands.h"
+#include "app.h"
 
 //============================================================================//
 //            G L O B A L   D E F I N I T I O N S                             //
@@ -101,22 +102,32 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //------------------------------------------------------------------------------
 static int waitSdoEvent(tEplSdoComFinished* comFinished_p);
 static void printData(char* data_p, UINT32 len_p, tEplObdType type_p);
+static int getPiSize(FILE *file_p, DWORD* pInSize_p, DWORD* pOutSize_p);
 int parseData(char* dataStr_p, tEplObdType type_p, void* pData_p);
 
-static BOOL exitApp(int argc, char** argv, UINT32 param);
+static BOOL exitApp(int argc_p, char** argv_p, UINT32 param_p);
 static BOOL resetStack(int argc_p, char** argv_p, UINT32 param_p);
-static BOOL setCycleError(int argc, char** argv, UINT32 param);
+static BOOL startStack(int argc_p, char** argv_p, UINT32 param_p);
+static BOOL stopStack(int argc_p, char** argv_p, UINT32 param_p);
+static BOOL setCycleError(int argc_p, char** argv_p, UINT32 param_p);
 static BOOL readSdo(int argc_p, char** argv_p, UINT32 param_p);
 static BOOL writeSdo(int argc_p, char** argv_p, UINT32 param_p);
+static BOOL readPi(int argc_p, char** argv_p, UINT32 param_p);
+static BOOL writePi(int argc_p, char** argv_p, UINT32 param_p);
 
 tCmdTbl commands_g[] =
 {
     { "help",           "help",                                                     "Print this help",                      printHelp,              0},
     { "exit",           "exit",                                                     "Exit the application",                 exitApp,                0},
+    { "start",          "start <InputPiSize> <OutputPiSize>",                       "Start stack operation",                startStack,             0},
+    { "stop",           "stop",                                                     "Stop stack operation",                 stopStack,              0},
     { "reset",          "reset",                                                    "Send NMT SW-Reset",                    resetStack,             0},
     { "cycleerr",       "cycleerr",                                                 "Set a cyle error",                     setCycleError,          0},
-    { "sdoread",        "sdoread <Node> <Index> <SubIndex> <DataType>",             "Read an object through SDO",           readSdo,                0},
-    { "sdowrite",       "sdowrite <Node> <Index> <SubIndex> <DataType> <Data>",     "Write an object through SDO",          writeSdo,               0},
+    { "sdoread",        "sdoread <DataType> <Node> <Index> <SubIndex>",             "Read an object through SDO",           readSdo,                0},
+    { "sdowrite",       "sdowrite <DataType> <Node> <Index> <SubIndex> <Data>",     "Write an object through SDO",          writeSdo,               0},
+    { "piread",         "piread <DataType> <Offset>",                               "Read data from input PI",              readPi,                 0},
+    { "piwrite",        "pwrite <DataType> <Offset> <Data>",                        "Write data into output PI",            writePi,                0},
+
     { NULL,             NULL,                                                        NULL,                                  NULL,                   0},
 };
 
@@ -222,6 +233,53 @@ int parseData(char* dataStr_p, tEplObdType type_p, void* pData_p)
     }
     return 0;
 }
+
+//------------------------------------------------------------------------------
+/**
+\brief  Parse data
+*/
+//------------------------------------------------------------------------------
+int writePoData(int offset, char* dataStr_p, tEplObdType type_p)
+{
+    int     base;
+    char*   pImage;
+
+    if (strncmp(dataStr_p, "0x", 2) == 0)
+        base = 16;
+    else
+        base = 10;
+
+    pImage = getInputImage();
+
+    switch (type_p)
+    {
+        case kEplObdTypInt8:
+            *(INT8*)(pImage + offset) = (INT8)strtol(dataStr_p, NULL, base);
+            break;
+        case kEplObdTypUInt8:
+            *(UINT8*)(pImage + offset)  = (UINT8)strtoul(dataStr_p, NULL, base);
+            break;
+        case kEplObdTypInt16:
+            *(INT16*)(pImage + offset)  = (INT16)strtol(dataStr_p, NULL, base);
+            break;
+        case kEplObdTypUInt16:
+            *(UINT16*)(pImage + offset)  = (UINT16)strtoul(dataStr_p, NULL, base);
+            break;
+        case kEplObdTypInt32:
+            *(INT32*)(pImage + offset)  = (INT32)strtol(dataStr_p, NULL, base);
+            break;
+        case kEplObdTypUInt32:
+            *(UINT32*)(pImage + offset)  = (UINT32)strtoul(dataStr_p, NULL, base);
+            break;
+        default:
+            printf ("Invalid Data Type!\n");
+            return -1;
+            break;
+    }
+    return 0;
+}
+
+
 //------------------------------------------------------------------------------
 /**
 \brief  Wait for a sdo event
@@ -259,7 +317,7 @@ static int waitSdoEvent(tEplSdoComFinished* comFinished_p)
 
 */
 //------------------------------------------------------------------------------
-static BOOL exitApp(int argc, char** argv, UINT32 param)
+static BOOL exitApp(int argc_p, char** argv_p, UINT32 param_p)
 {
     return TRUE;
 }
@@ -317,11 +375,92 @@ static BOOL resetStack(int argc_p, char** argv_p, UINT32 param_p)
 
 //------------------------------------------------------------------------------
 /**
+\brief  Start the stack (SW Reset)
+*/
+//------------------------------------------------------------------------------
+static BOOL startStack(int argc_p, char** argv_p, UINT32 param_p)
+{
+    tEplKernel  ret;
+    UINT32      inSize;
+    UINT32      outSize;
+    static char cdcFile[256];
+    FILE*       file;
+
+    if ((argc_p != 3) && (argc_p != 4))
+    {
+        printf ("Usage: start <InputPiSize> <OutputPiSize> [<CDC>]\n");
+        return FALSE;
+    }
+
+    if (argc_p == 3)
+    {
+        strncpy (cdcFile, "mnobd.cdc", 256);
+    }
+    else
+    {
+        strncpy(cdcFile, argv_p[3], 256);
+    }
+
+    if ((file = fopen(cdcFile, "r")) == NULL)
+    {
+        printf ("CDC file %s does not exist!\n", argv_p[1]);
+        return FALSE;
+    }
+
+    //getPiSize(file, &inSize, &outSize);
+
+    fclose(file);
+
+    ret = EplApiSetCdcFilename(cdcFile);
+    if (ret != kEplSuccessful)
+    {
+        printf("EplApiSetCdcFilename() failed (Error:0x%x!\n", ret);
+        return FALSE;
+    }
+
+    if (strncmp(argv_p[1], "0x", 2) == 0)
+        inSize = (UINT32)strtoul(argv_p[1], NULL, 16);
+    else
+        inSize = (UINT32)strtoul(argv_p[1], NULL, 10);
+
+    if (strncmp(argv_p[2], "0x", 2) == 0)
+        outSize = (UINT32)strtoul(argv_p[2], NULL, 16);
+    else
+        outSize = (UINT32)strtoul(argv_p[2], NULL, 10);
+
+    if((ret = initApp(inSize, outSize)) != kEplSuccessful)
+    {
+        printf ("Couldn't init application!\n");
+        return FALSE;
+    }
+
+    // start stack processing by sending a NMT reset command
+    EplApiExecNmtCommand(kEplNmtEventSwReset);
+    return FALSE;
+}
+
+//------------------------------------------------------------------------------
+/**
+\brief  Start the stack (SW Reset)
+*/
+//------------------------------------------------------------------------------
+static BOOL stopStack(int argc_p, char** argv_p, UINT32 param_p)
+{
+    // start stack processing by sending a NMT reset command
+    EplApiExecNmtCommand(kEplNmtEventSwitchOff);
+
+    shutdownApp();
+
+    return FALSE;
+}
+
+//------------------------------------------------------------------------------
+/**
 \brief  Simulate a cycle error
 
 */
 //------------------------------------------------------------------------------
-static BOOL setCycleError(int argc, char** argv, UINT32 param)
+static BOOL setCycleError(int argc_p, char** argv_p, UINT32 param_p)
 {
     tEplKernel  ret;
 
@@ -336,7 +475,6 @@ static BOOL setCycleError(int argc, char** argv, UINT32 param)
 //------------------------------------------------------------------------------
 /**
 \brief  Do a SDO read
-
 */
 //------------------------------------------------------------------------------
 static BOOL readSdo(int argc_p, char**argv_p, UINT32 param_p)
@@ -401,8 +539,39 @@ static BOOL readSdo(int argc_p, char**argv_p, UINT32 param_p)
 
 //------------------------------------------------------------------------------
 /**
-\brief  Do a SDO write
+\brief  Do a PI read
+*/
+//------------------------------------------------------------------------------
+static BOOL readPi(int argc_p, char**argv_p, UINT32 param_p)
+{
+    tEplKernel          ret;
+    UINT32              size;
+    tEplObdType         type;
+    size_t              len;
+    int                 offset;
+    char*               pImage;
 
+    if (argc_p != 3)
+    {
+        printf ("Usage: piread <DataType> <Offset>\n");
+        return FALSE;
+    }
+
+    parseDataType(argv_p[1], &type, &len);
+    if (strncmp(argv_p[2], "0x", 2) == 0)
+        offset = (UINT32)strtoul(argv_p[2], NULL, 16);
+    else
+        offset = (UINT32)strtoul(argv_p[2], NULL, 10);
+
+    pImage = getOutputImage();
+    printData(pImage + offset, len, type);
+
+    return FALSE;
+}
+
+//------------------------------------------------------------------------------
+/**
+\brief  Do a SDO write
 */
 //------------------------------------------------------------------------------
 static BOOL writeSdo(int argc_p, char** argv_p, UINT32 param_p)
@@ -459,7 +628,74 @@ static BOOL writeSdo(int argc_p, char** argv_p, UINT32 param_p)
     return FALSE;
 }
 
+//------------------------------------------------------------------------------
+/**
+\brief  Do a PI write
+*/
+//------------------------------------------------------------------------------
+static BOOL writePi(int argc_p, char** argv_p, UINT32 param_p)
+{
+    tEplKernel          ret = kEplSuccessful;
+    UINT32              data;
+    tEplObdType         type;
+    size_t              len;
+    int                 offset;
+    char*               pImage;
 
+    if (argc_p != 4)
+    {
+        printf ("Usage: pwrite <DataType> <Offset> <Data>\n");
+        return FALSE;
+    }
+
+    parseDataType(argv_p[1], &type, &len);
+
+    if (strncmp(argv_p[2], "0x", 2) == 0)
+        offset = (UINT32)strtoul(argv_p[2], NULL, 16);
+    else
+        offset = (UINT32)strtoul(argv_p[2], NULL, 10);
+
+    writePoData(offset, argv_p[3], type);
+
+    return FALSE;
+}
+
+//------------------------------------------------------------------------------
+/**
+\brief  Calculate PI size
+*/
+//------------------------------------------------------------------------------
+static int getPiSize(FILE *file_p, DWORD* pInSize_p, DWORD* pOutSize_p)
+{
+    UINT32          numEntries;
+    UINT16          oid;
+    UINT8           sub;
+    UINT32          size;
+    UINT8           data[16];
+    int             i;
+
+    fread(&numEntries, sizeof(UINT32), 1, file_p);
+
+    printf ("CDC contains %d entries!\n", numEntries);
+
+    for (i = 0; i < numEntries; i++)
+    {
+        fread (&oid, sizeof(UINT16), 1, file_p);
+        fread (&sub, sizeof(UINT8), 1, file_p);
+        fread (&size, sizeof(UINT32), 1, file_p);
+        if (oid == 0x1F22)
+        {
+            fseek(file_p, size, SEEK_CUR);
+        }
+        else
+            fread (data, size, 1, file_p);
+
+        printf ("oid:%04x sub:%d size:%d\n", oid, sub, size);
+    }
+
+    return 0;
+
+}
 
 ///\}
 

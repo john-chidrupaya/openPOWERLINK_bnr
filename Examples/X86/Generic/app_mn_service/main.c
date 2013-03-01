@@ -113,6 +113,8 @@ typedef struct
 {
     DWORD       cycleLen;
     char*       pLogFile;
+    DWORD       inSize;
+    DWORD       outSize;
 } tOptions;
 
 //------------------------------------------------------------------------------
@@ -166,16 +168,18 @@ int main(int argc, char **argv)
 
     if ((ret = initPowerlink(opts.cycleLen, aMacAddr_g)) != kEplSuccessful)
         goto Exit;
-
-    if((ret = initApp()) != kEplSuccessful)
+/*
+    if((ret = initApp(opts.inSize, opts.outSize)) != kEplSuccessful)
         goto Exit;
-
+*/
     loopMain();
 
 Exit:
     cleanupEvents();
     shutdownPowerlink();
+/*
     shutdownApp();
+*/
     shutdownSystem();
 
     return 0;
@@ -317,13 +321,6 @@ static void loopMain(void)
 #endif
 
 
-    // start stack processing by sending a NMT reset command
-    ret = EplApiExecNmtCommand(kEplNmtEventSwReset);
-    if (ret != kEplSuccessful)
-    {
-        return;
-    }
-
     PRINTF("\n-------------------------------\n");
     PRINTF("Enter your Commands:\n");
     PRINTF("Press \"help\" for help\n");
@@ -397,9 +394,11 @@ static int getOptions(int argc_p, char **argv_p, tOptions* pOpts_p)
     /* setup default parameters */
     pOpts_p->cycleLen = CYCLE_LEN;
     pOpts_p->pLogFile = NULL;
+    pOpts_p->inSize = 0;
+    pOpts_p->outSize = 0;
 
     /* get command line parameters */
-    while ((opt = getopt(argc_p, argv_p, "c:l:")) != -1)
+    while ((opt = getopt(argc_p, argv_p, "c:l:i:o:")) != -1)
     {
         switch (opt)
         {
@@ -411,8 +410,16 @@ static int getOptions(int argc_p, char **argv_p, tOptions* pOpts_p)
             pOpts_p->pLogFile = optarg;
             break;
 
+        case 'i':
+            pOpts_p->inSize = strtoul(optarg, NULL, 10);
+            break;
+
+        case 'o':
+            pOpts_p->outSize = strtoul(optarg, NULL, 10);
+            break;
+
         default: /* '?' */
-            printf ("Usage: %s [-c CYCLE_TIME] [-l LOGFILE]\n", argv_p[0]);
+            printf ("Usage: %s [-c CYCLE_TIME] [-i INIMG_SIZE] [-o OUTIMG_SIZE] [-l LOGFILE]\n", argv_p[0]);
             return -1;
         }
     }

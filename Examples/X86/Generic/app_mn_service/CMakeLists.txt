@@ -50,6 +50,22 @@
 #
 ################################################################################
 
+# Usage: list_subdirectories(the_list_is_returned_here C:/cwd 1)
+macro(list_subdirectories retval curdir)
+  file(GLOB sub-dir RELATIVE ${curdir} ${curdir}/*)
+  set(list_of_dirs "")
+  foreach(dir ${sub-dir})
+    if(IS_DIRECTORY ${curdir}/${dir})
+        set(list_of_dirs ${list_of_dirs} ${dir})
+    endif()
+  endforeach()
+  set(${retval} ${list_of_dirs})
+endmacro()
+
+list_subdirectories(CONFIGS ${POWERLINK_SOURCE_DIR}/Examples/X86/Generic/app_mn_service/configs)
+SET(CFG_SELECT_APP "stddemo" CACHE STRING "Select application to use!")
+SET_PROPERTY(CACHE CFG_SELECT_APP PROPERTY STRINGS ${CONFIGS})
+
 SET(OBJDICT CiA302-4_MN)
 
 SET(COMMON_SOURCE_DIR ${POWERLINK_SOURCE_DIR}/Examples/X86/Generic/common)
@@ -71,7 +87,7 @@ ENDIF (UNIX)
 
 # set sources of POWERLINK application
 SET (DEMO_SOURCES main.c
-                  app.c
+                  ${CMAKE_CURRENT_SOURCE_DIR}/configs/${CFG_SELECT_APP}/app.c
                   event.c
                   parser.c
                   commands.c
@@ -151,12 +167,12 @@ ELSEIF (WIN32)
 ENDIF (UNIX)
 
 # add installation rules
-INSTALL(TARGETS mn-service RUNTIME DESTINATION bin)
-INSTALL(FILES mnobd.cdc DESTINATION bin)
+INSTALL(TARGETS mn-service RUNTIME DESTINATION bin/${CFG_SELECT_APP})
+INSTALL(FILES configs/${CFG_SELECT_APP}/mnobd.cdc DESTINATION bin/${CFG_SELECT_APP})
 
 IF (UNIX)
     IF (NOT CFG_KERNEL_STACK)
-        INSTALL(PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/../../Linux/gnu/tools/set_prio DESTINATION bin)
+        INSTALL(PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/../../Linux/gnu/tools/set_prio DESTINATION bin/${CFG_SELECT_APP})
     ENDIF (NOT CFG_KERNEL_STACK)
 ENDIF (UNIX)
 

@@ -80,6 +80,7 @@ extern "C" {
 BOOL parseCommand(tCmdTbl* pCommands_p);
 BOOL printHelp(void);
 UINT32 readUint(char* strName_p, UINT32 low_p, UINT32 high_p, int base_p);
+int parseCmdLine(char* command, int *argc, char** argv);
 void parseDataType(const char* typeStr_p, tEplObdType* type_p, size_t* len_p);
 
 #ifdef __cplusplus

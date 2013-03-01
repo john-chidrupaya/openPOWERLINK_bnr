@@ -59,9 +59,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 extern "C" {
 #endif
 
-tEplKernel initApp(void);
+tEplKernel initApp(DWORD inSize_p, DWORD outSize_p);
 void shutdownApp (void);
 tEplKernel PUBLIC processSync(void);
+char* getInputImage(void);
+char* getOutputImage(void);
 
 #ifdef __cplusplus
 }

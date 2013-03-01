@@ -1,11 +1,8 @@
 /**
 ********************************************************************************
-\file   parser.c
+\file   app.c
 
-\brief  openPOWERLINK command line interface parser
-
-This file implements the command line parser used for the command line interface
-of the openPOWERLINK service application.
+\brief  Generic application
 *******************************************************************************/
 /*------------------------------------------------------------------------------
 Copyright (c) 2013, Bernecker+Rainer Industrie-Elektronik Ges.m.b.H. (B&R)
@@ -38,11 +35,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // includes
 //------------------------------------------------------------------------------
 #include <Epl.h>
-#include <console/console.h>
-#include <termios.h>
+#include "app.h"
 #include "local-types.h"
-#include "parser.h"
-#include "commands.h"
 
 //============================================================================//
 //            G L O B A L   D E F I N I T I O N S                             //
@@ -60,7 +54,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // global function prototypes
 //------------------------------------------------------------------------------
 
-
 //============================================================================//
 //            P R I V A T E   D E F I N I T I O N S                           //
 //============================================================================//
@@ -76,24 +69,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //------------------------------------------------------------------------------
 // local vars
 //------------------------------------------------------------------------------
+static UINT8*                       pProcessImageIn_g;
+static UINT8*                       pProcessImageOut_g;
+static tEplApiProcessImageCopyJob   AppProcessImageCopyJob_g;
 
-/**
-* \brief   Datatype definition strings
-*/
-tCmdDataType typeTbl_l[] =
-{
-    {"s8",      kEplObdTypInt8,             1 },
-    {"u8",      kEplObdTypUInt8,            1 },
-    {"s16",     kEplObdTypInt16,            2 },
-    {"u16",     kEplObdTypUInt16,           2 },
-    {"s32",     kEplObdTypInt32,            4 },
-    {"u32",     kEplObdTypUInt32,           4 },
-    {NULL,      0,                          0 }
-};
 
 //------------------------------------------------------------------------------
 // local function prototypes
 //------------------------------------------------------------------------------
+static tEplKernel initProcessImage(size_t inSize_p, size_t outSize_p);
 
 //============================================================================//
 //            P U B L I C   F U N C T I O N S                                 //
@@ -101,139 +85,102 @@ tCmdDataType typeTbl_l[] =
 
 //------------------------------------------------------------------------------
 /**
-\brief  Parse for commands
+\brief  Initialize the synchronous data application
+
+The function initializes the synchronous data application
+
+\return The function returns a tEplKernel error code.
 */
 //------------------------------------------------------------------------------
-BOOL parseCommand(tCmdTbl* pCommands_p)
+tEplKernel initApp(DWORD inSize_p, DWORD outSize_p)
 {
-    char        command[120];
-    tCmdTbl*    pCmdEntry;
-    int         argc;
-    char*       argv[10];
+    tEplKernel ret = kEplSuccessful;
 
-    fgets (command, 120, stdin);
-    parseCmdLine(command, &argc, argv);
-    if (argv[0] == NULL)
-        return FALSE;
+    /*******************************************************/
+    /* place initialization of application variables here! */
 
-    pCmdEntry = pCommands_p;
-    while (pCmdEntry->cmd != NULL)
-    {
-        if (strcmp(pCmdEntry->cmd, argv[0]) == 0)
-        {
-            return (pCmdEntry->cmdFunc(argc, argv, pCmdEntry->param));
-        }
-        pCmdEntry++;
-    }
-    printHelp();
-    return FALSE;
+
+    /*******************************************************/
+    ret = initProcessImage(inSize_p, outSize_p);
+
+    return ret;
 }
 
 //------------------------------------------------------------------------------
 /**
-\brief  Parse command line
+\brief  Shutdown the synchronous data application
+
+The function shut's down the synchronous data application
+
+\return The function returns a tEplKernel error code.
 */
 //------------------------------------------------------------------------------
-int parseCmdLine(char* command, int *argc, char** argv)
+void shutdownApp (void)
 {
-    char        delimiter[] = " \n";
-    char*       ptr;
-    int         i;
+    EplApiProcessImageFree();
 
-    i = 0;
-    ptr = strtok(command, delimiter);
-    argv[i] = ptr;
-    while(ptr != NULL)
-    {
-        i++;
-        ptr = strtok(NULL, delimiter);
-        argv[i] = ptr;
-    }
-    *argc = i;
-    return i;
+    EPL_FREE(pProcessImageIn_g);
+    EPL_FREE(pProcessImageOut_g);
 }
 
 //------------------------------------------------------------------------------
 /**
-\brief  Print command help
+\brief  Synchronous data handler
 
+The function implements the synchronous data handler.
+
+\return The function returns a tEplKernel error code.
 */
 //------------------------------------------------------------------------------
-BOOL printHelp(void)
+tEplKernel processSync(void)
 {
-    tCmdTbl*        pCmdEntry;
+    tEplKernel          ret = kEplSuccessful;
 
-    printf ("\nAvailable commands:\n-------------------\n");
+    ret = EplApiProcessImageExchange(&AppProcessImageCopyJob_g);
+    if (ret != kEplSuccessful)
+        return ret;
 
-    pCmdEntry = getCommands();
-    while(pCmdEntry->cmd != NULL)
-    {
-        printf ("%s - %s\n", pCmdEntry->usage, pCmdEntry->description);
-        pCmdEntry++;
-    }
-    printf ("\n");
-    return FALSE;
+    /**************************************************************************/
+    // read inputs from process image
+    // e.g. nodeVar_l[0].input = AppProcessImageOut_g.CN1_M00_Digital_Input_8_Bit_Byte_1;
+    /**************************************************************************/
+
+    /**************************************************************************/
+    // process your data
+    /**************************************************************************/
+
+    /**************************************************************************/
+    // store your outputs into process image
+    // AppProcessImageIn_g.CN1_M00_Digital_Ouput_8_Bit_Byte_1 = nodeVar_l[0].leds;
+    /**************************************************************************/
+
+    return ret;
 }
 
 //------------------------------------------------------------------------------
 /**
-\brief  Read unsigned integer
+\brief  Get input image
 
+The function returns a pointer to the input process image.
 */
 //------------------------------------------------------------------------------
-UINT32 readUint(char* strName_p, UINT32 low_p, UINT32 high_p, int base_p)
+char* getInputImage(void)
 {
-    UINT32      input = 0;
-    UINT32      fInputValid;
-    char        buffer[30];
-    char*       pEnd;
-
-    fInputValid  = 0;
-    do
-    {
-        printf("Enter %s > ", strName_p);
-        fgets(buffer, sizeof(buffer), stdin);
-        input = (UINT32)strtoul(buffer, &pEnd, base_p);
-        if ((input >= low_p) && (input <= high_p))
-        {
-            fInputValid  = 1;
-        }
-        else
-        {
-            if (base_p == 10)
-                printf ("Please enter a number between %d and %d\n", low_p, high_p);
-            else
-                printf ("Please enter a number between 0x%x and 0x%x\n", low_p, high_p);
-        }
-    } while(fInputValid != 1);
-
-    return  input;
+    return (char *)pProcessImageIn_g;
 }
 
 //------------------------------------------------------------------------------
 /**
-\brief  Parse data type
+\brief  Get input image
+
+The function returns a pointer to the input process image.
 */
 //------------------------------------------------------------------------------
-void parseDataType(const char* typeStr_p, tEplObdType* type_p, size_t* len_p)
+char* getOutputImage(void)
 {
-    tCmdDataType*        pTypeTbl;
-
-    pTypeTbl = typeTbl_l;
-    while(pTypeTbl->typeStr != NULL)
-    {
-        if (strcmp(pTypeTbl->typeStr, typeStr_p) == 0)
-        {
-            *type_p = pTypeTbl->type;
-            *len_p = pTypeTbl->len;
-            return;
-        }
-        pTypeTbl++;
-    }
-    *type_p = 0;
-    *len_p = 0;
-    return;
+    return (char *)pProcessImageOut_g;
 }
+
 
 //============================================================================//
 //            P R I V A T E   F U N C T I O N S                               //
@@ -241,11 +188,51 @@ void parseDataType(const char* typeStr_p, tEplObdType* type_p, size_t* len_p)
 /// \name Private Functions
 /// \{
 
+//------------------------------------------------------------------------------
+/**
+\brief  Initialize process image
+
+The function initializes the process image of the application.
+
+\return The function returns a tEplKernel error code.
+*/
+//------------------------------------------------------------------------------
+static tEplKernel initProcessImage(size_t inSize_p, size_t outSize_p)
+{
+    tEplKernel      ret = kEplSuccessful;
+
+    printf("Initializing process image...\n");
+    printf("Size of input process image: %ld\n", inSize_p);
+    printf("Size of output process image: %ld\n", outSize_p);
+
+    if ((pProcessImageIn_g = EPL_MALLOC(inSize_p)) == NULL)
+        return kEplNoResource;
+    EPL_MEMSET(pProcessImageIn_g, 0, inSize_p);
+
+    if ((pProcessImageOut_g = EPL_MALLOC(outSize_p)) == NULL)
+        return kEplNoResource;
+
+    EPL_MEMSET(pProcessImageOut_g, 0, outSize_p);
+
+    AppProcessImageCopyJob_g.m_fNonBlocking = FALSE;
+    AppProcessImageCopyJob_g.m_uiPriority = 0;
+    AppProcessImageCopyJob_g.m_In.m_pPart = pProcessImageIn_g;
+    AppProcessImageCopyJob_g.m_In.m_uiOffset = 0;
+    AppProcessImageCopyJob_g.m_In.m_uiSize = inSize_p;
+    AppProcessImageCopyJob_g.m_Out.m_pPart = pProcessImageOut_g;
+    AppProcessImageCopyJob_g.m_Out.m_uiOffset = 0;
+    AppProcessImageCopyJob_g.m_Out.m_uiSize = outSize_p;
+
+    ret = EplApiProcessImageAlloc(inSize_p, outSize_p, 2, 2);
+    if (ret != kEplSuccessful)
+    {
+        return ret;
+    }
+
+    ret = EplApiProcessImageSetup();
+
+    return ret;
+}
+
 ///\}
-
-
-
-
-
-
 
