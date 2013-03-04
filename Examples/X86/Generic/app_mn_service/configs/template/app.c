@@ -72,6 +72,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 static PI_IN                        AppProcessImageIn_g;
 static PI_OUT                       AppProcessImageOut_g;
 static tEplApiProcessImageCopyJob   AppProcessImageCopyJob_g;
+static BOOL                         fAppRun_l;
+
 
 
 //------------------------------------------------------------------------------
@@ -126,6 +128,19 @@ void shutdownApp (void)
 
 //------------------------------------------------------------------------------
 /**
+\brief  Run application code
+
+The function sets up the run flag of the application and therefore controls
+if the application runs.
+*/
+//------------------------------------------------------------------------------
+void runApp(BOOL run_p)
+{
+    fAppRun_l = run_p;
+}
+
+//------------------------------------------------------------------------------
+/**
 \brief  Get input image
 
 The function returns a pointer to the input process image.
@@ -148,7 +163,29 @@ char* getOutputImage(void)
     return &AppProcessImageOut_g;
 }
 
+//------------------------------------------------------------------------------
+/**
+\brief  Get size of output image
 
+The function returns the size of the output image
+*/
+//------------------------------------------------------------------------------
+UINT32 getOutputSize(void)
+{
+    return COMPUTED_PI_IN_SIZE;
+}
+
+//------------------------------------------------------------------------------
+/**
+\brief  Get size of output image
+
+The function returns the size of the output image
+*/
+//------------------------------------------------------------------------------
+UINT32 getInputSize(void)
+{
+    return COMPUTED_PI_OUT_SIZE;
+}
 
 //------------------------------------------------------------------------------
 /**

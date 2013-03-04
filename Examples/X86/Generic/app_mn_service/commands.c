@@ -103,12 +103,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //------------------------------------------------------------------------------
 static int waitSdoEvent(tEplSdoComFinished* comFinished_p);
 static void printData(char* data_p, UINT32 len_p, tEplObdType type_p);
-static int getPiSize(FILE *file_p, DWORD* pInSize_p, DWORD* pOutSize_p);
 int parseData(char* dataStr_p, tEplObdType type_p, void* pData_p);
 
 static BOOL exitApp(int argc_p, char** argv_p, UINT32 param_p);
 static BOOL resetStack(int argc_p, char** argv_p, UINT32 param_p);
 static BOOL startStack(int argc_p, char** argv_p, UINT32 param_p);
+static BOOL cmdRunApp(int argc_p, char** argv_p, UINT32 param_p);
 static BOOL stopStack(int argc_p, char** argv_p, UINT32 param_p);
 static BOOL setCycleError(int argc_p, char** argv_p, UINT32 param_p);
 static BOOL readSdo(int argc_p, char** argv_p, UINT32 param_p);
@@ -120,8 +120,9 @@ tCmdTbl commands_g[] =
 {
     { "help",           "help",                                                     "Print this help",                      printHelp,              0},
     { "exit",           "exit",                                                     "Exit the application",                 exitApp,                0},
-    { "start",          "start <InputPiSize> <OutputPiSize>",                       "Start stack operation",                startStack,             0},
+    { "start",          "start [<InputPiSize> <OutputPiSize>] [<CDC>]",             "Start stack operation",                startStack,             0},
     { "stop",           "stop",                                                     "Stop stack operation",                 stopStack,              0},
+    { "run",            "run <1|0>",                                                "Run application code 1=enable 0=disable", cmdRunApp,           0},
     { "reset",          "reset",                                                    "Send NMT SW-Reset",                    resetStack,             0},
     { "cycleerr",       "cycleerr",                                                 "Set a cyle error",                     setCycleError,          0},
     { "sdoread",        "sdoread <DataType> <Node> <Index> <SubIndex>",             "Read an object through SDO",           readSdo,                0},
@@ -326,7 +327,6 @@ static BOOL exitApp(int argc_p, char** argv_p, UINT32 param_p)
 //------------------------------------------------------------------------------
 /**
 \brief  Reset the stack (SW Reset)
-
 */
 //------------------------------------------------------------------------------
 static BOOL resetStack(int argc_p, char** argv_p, UINT32 param_p)
@@ -374,6 +374,28 @@ static BOOL resetStack(int argc_p, char** argv_p, UINT32 param_p)
     return FALSE;
 }
 
+
+//------------------------------------------------------------------------------
+/**
+\brief  Run application
+*/
+//------------------------------------------------------------------------------
+static BOOL cmdRunApp(int argc_p, char** argv_p, UINT32 param_p)
+{
+    tEplKernel          ret;
+    UINT32              runFlag;
+
+    if (argc_p != 2)
+    {
+        printf ("Usage: run <1|0>\n");
+        return FALSE;
+    }
+
+    runFlag = strtoul(argv_p[1], NULL, 10);
+    runApp((BOOL)runFlag);
+    return FALSE;
+}
+
 //------------------------------------------------------------------------------
 /**
 \brief  Start the stack (SW Reset)
@@ -387,9 +409,9 @@ static BOOL startStack(int argc_p, char** argv_p, UINT32 param_p)
     static char cdcFile[256];
     FILE*       file;
 
-    if ((argc_p != 3) && (argc_p != 4))
+    if ((argc_p != 3) && (argc_p != 4) && (argc_p != 1))
     {
-        printf ("Usage: start <InputPiSize> <OutputPiSize> [<CDC>]\n");
+        printf ("Usage: start [<InputPiSize> <OutputPiSize>] [<CDC>]\n");
         return FALSE;
     }
 
@@ -420,15 +442,24 @@ static BOOL startStack(int argc_p, char** argv_p, UINT32 param_p)
         }
     }
 
-    if (strncmp(argv_p[1], "0x", 2) == 0)
-        inSize = (UINT32)strtoul(argv_p[1], NULL, 16);
-    else
-        inSize = (UINT32)strtoul(argv_p[1], NULL, 10);
+    if ((argc_p == 3) || (argc_p == 4))
+    {
+        printf ("Reading sizes!\n");
+        if (strncmp(argv_p[1], "0x", 2) == 0)
+            inSize = (UINT32)strtoul(argv_p[1], NULL, 16);
+        else
+            inSize = (UINT32)strtoul(argv_p[1], NULL, 10);
 
-    if (strncmp(argv_p[2], "0x", 2) == 0)
-        outSize = (UINT32)strtoul(argv_p[2], NULL, 16);
+        if (strncmp(argv_p[2], "0x", 2) == 0)
+            outSize = (UINT32)strtoul(argv_p[2], NULL, 16);
+        else
+            outSize = (UINT32)strtoul(argv_p[2], NULL, 10);
+    }
     else
-        outSize = (UINT32)strtoul(argv_p[2], NULL, 10);
+    {
+        inSize = getInputSize();
+        outSize = getOutputSize();
+    }
 
     if((ret = initApp(inSize, outSize)) != kEplSuccessful)
     {
@@ -664,43 +695,6 @@ static BOOL writePi(int argc_p, char** argv_p, UINT32 param_p)
     writePoData(offset, argv_p[3], type);
 
     return FALSE;
-}
-
-//------------------------------------------------------------------------------
-/**
-\brief  Calculate PI size
-*/
-//------------------------------------------------------------------------------
-static int getPiSize(FILE *file_p, DWORD* pInSize_p, DWORD* pOutSize_p)
-{
-    UINT32          numEntries;
-    UINT16          oid;
-    UINT8           sub;
-    UINT32          size;
-    UINT8           data[16];
-    int             i;
-
-    fread(&numEntries, sizeof(UINT32), 1, file_p);
-
-    printf ("CDC contains %d entries!\n", numEntries);
-
-    for (i = 0; i < numEntries; i++)
-    {
-        fread (&oid, sizeof(UINT16), 1, file_p);
-        fread (&sub, sizeof(UINT8), 1, file_p);
-        fread (&size, sizeof(UINT32), 1, file_p);
-        if (oid == 0x1F22)
-        {
-            fseek(file_p, size, SEEK_CUR);
-        }
-        else
-            fread (data, size, 1, file_p);
-
-        printf ("oid:%04x sub:%d size:%d\n", oid, sub, size);
-    }
-
-    return 0;
-
 }
 
 ///\}

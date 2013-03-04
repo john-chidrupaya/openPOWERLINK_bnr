@@ -42,7 +42,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //------------------------------------------------------------------------------
 // includes
 //------------------------------------------------------------------------------
-
+#include "local-types.h"
 //------------------------------------------------------------------------------
 // const defines
 //------------------------------------------------------------------------------
@@ -61,9 +61,12 @@ extern "C" {
 
 tEplKernel initApp(DWORD inSize_p, DWORD outSize_p);
 void shutdownApp (void);
+void runApp(BOOL run_p);
 tEplKernel PUBLIC processSync(void);
 char* getInputImage(void);
 char* getOutputImage(void);
+UINT32 getInputSize(void);
+UINT32 getOutputSize(void);
 
 #ifdef __cplusplus
 }

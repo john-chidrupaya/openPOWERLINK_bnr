@@ -93,6 +93,8 @@ typedef struct
 //------------------------------------------------------------------------------
 static int                  usedNodeIds_l[] = {1, 32, 110, 0};
 static UINT                 cnt_l;
+static BOOL                 fAppRun_l;
+
 static APP_NODE_VAR_T       nodeVar_l[MAX_NODES];
 static PI_IN                AppProcessImageIn_g;
 static PI_OUT               AppProcessImageOut_g;
@@ -103,7 +105,7 @@ static tEplApiProcessImageCopyJob AppProcessImageCopyJob_g;
 //------------------------------------------------------------------------------
 // local function prototypes
 //------------------------------------------------------------------------------
-static tEplKernel initProcessImage(void);
+static tEplKernel initProcessImage(DWORD inSize_p, DWORD outSize_p);
 
 //============================================================================//
 //            P U B L I C   F U N C T I O N S                                 //
@@ -126,6 +128,7 @@ tEplKernel initApp(DWORD inSize_p, DWORD outSize_p)
     int        i;
 
     cnt_l = 0;
+    fAppRun_l = FALSE;
 
     for (i = 0; (i < MAX_NODES) && (usedNodeIds_l[i] != 0); i++)
     {
@@ -137,7 +140,7 @@ tEplKernel initApp(DWORD inSize_p, DWORD outSize_p)
         nodeVar_l[i].period = 0;
     }
 
-    ret = initProcessImage();
+    ret = initProcessImage(inSize_p, outSize_p);
 
     return ret;
 }
@@ -158,6 +161,20 @@ void shutdownApp (void)
     EplApiProcessImageFree();
 }
 
+
+//------------------------------------------------------------------------------
+/**
+\brief  Run application code
+
+The function sets up the run flag of the application and therefore controls
+if the application runs.
+*/
+//------------------------------------------------------------------------------
+void runApp(BOOL run_p)
+{
+    fAppRun_l = run_p;
+}
+
 //------------------------------------------------------------------------------
 /**
 \brief  Get input image
@@ -167,7 +184,7 @@ The function returns a pointer to the input process image.
 //------------------------------------------------------------------------------
 char* getInputImage(void)
 {
-    return &AppProcessImageIn_g;
+    return (char *)&AppProcessImageIn_g;
 }
 
 //------------------------------------------------------------------------------
@@ -179,7 +196,31 @@ The function returns a pointer to the input process image.
 //------------------------------------------------------------------------------
 char* getOutputImage(void)
 {
-    return &AppProcessImageOut_g;
+    return (char *)&AppProcessImageOut_g;
+}
+
+//------------------------------------------------------------------------------
+/**
+\brief  Get size of output image
+
+The function returns the size of the output image
+*/
+//------------------------------------------------------------------------------
+UINT32 getOutputSize(void)
+{
+    return COMPUTED_PI_IN_SIZE;
+}
+
+//------------------------------------------------------------------------------
+/**
+\brief  Get size of output image
+
+The function returns the size of the output image
+*/
+//------------------------------------------------------------------------------
+UINT32 getInputSize(void)
+{
+    return COMPUTED_PI_OUT_SIZE;
 }
 
 //------------------------------------------------------------------------------
@@ -202,58 +243,61 @@ tEplKernel processSync(void)
     if (ret != kEplSuccessful)
         return ret;
 
-    cnt_l++;
-    nodeVar_l[0].input = AppProcessImageOut_g.CN1_M00_Digital_Input_8_Bit_Byte_1;
-    nodeVar_l[1].input = AppProcessImageOut_g.CN32_M00_Digital_Input_8_Bit_Byte_1;
-    nodeVar_l[2].input = AppProcessImageOut_g.CN110_M00_Digital_Input_8_Bit_Byte_1;
-
-    for (i = 0; (i < MAX_NODES) && (usedNodeIds_l[i] != 0); i++)
+    if (fAppRun_l)
     {
-        /* Running Leds */
-        /* period for LED flashing determined by inputs */
-        nodeVar_l[i].period = (nodeVar_l[i].input == 0) ? 1 : (nodeVar_l[i].input * 20);
-        if (cnt_l % nodeVar_l[i].period == 0)
+        cnt_l++;
+        nodeVar_l[0].input = AppProcessImageOut_g.CN1_M00_Digital_Input_8_Bit_Byte_1;
+        nodeVar_l[1].input = AppProcessImageOut_g.CN32_M00_Digital_Input_8_Bit_Byte_1;
+        nodeVar_l[2].input = AppProcessImageOut_g.CN110_M00_Digital_Input_8_Bit_Byte_1;
+
+        for (i = 0; (i < MAX_NODES) && (usedNodeIds_l[i] != 0); i++)
         {
-            if (nodeVar_l[i].leds == 0x00)
+            /* Running Leds */
+            /* period for LED flashing determined by inputs */
+            nodeVar_l[i].period = (nodeVar_l[i].input == 0) ? 1 : (nodeVar_l[i].input * 20);
+            if (cnt_l % nodeVar_l[i].period == 0)
             {
-                nodeVar_l[i].leds = 0x1;
-                nodeVar_l[i].toggle = 1;
-            }
-            else
-            {
-                if (nodeVar_l[i].toggle)
+                if (nodeVar_l[i].leds == 0x00)
                 {
-                    nodeVar_l[i].leds <<= 1;
-                    if (nodeVar_l[i].leds == APP_LED_MASK_1)
-                    {
-                        nodeVar_l[i].toggle = 0;
-                    }
+                    nodeVar_l[i].leds = 0x1;
+                    nodeVar_l[i].toggle = 1;
                 }
                 else
                 {
-                    nodeVar_l[i].leds >>= 1;
-                    if (nodeVar_l[i].leds == 0x01)
+                    if (nodeVar_l[i].toggle)
                     {
-                        nodeVar_l[i].toggle = 1;
+                        nodeVar_l[i].leds <<= 1;
+                        if (nodeVar_l[i].leds == APP_LED_MASK_1)
+                        {
+                            nodeVar_l[i].toggle = 0;
+                        }
+                    }
+                    else
+                    {
+                        nodeVar_l[i].leds >>= 1;
+                        if (nodeVar_l[i].leds == 0x01)
+                        {
+                            nodeVar_l[i].toggle = 1;
+                        }
                     }
                 }
             }
+
+            if (nodeVar_l[i].input != nodeVar_l[i].inputOld)
+            {
+                nodeVar_l[i].inputOld = nodeVar_l[i].input;
+            }
+
+            if (nodeVar_l[i].leds != nodeVar_l[i].ledsOld)
+            {
+                nodeVar_l[i].ledsOld = nodeVar_l[i].leds;
+            }
         }
 
-        if (nodeVar_l[i].input != nodeVar_l[i].inputOld)
-        {
-            nodeVar_l[i].inputOld = nodeVar_l[i].input;
-        }
-
-        if (nodeVar_l[i].leds != nodeVar_l[i].ledsOld)
-        {
-            nodeVar_l[i].ledsOld = nodeVar_l[i].leds;
-        }
+        AppProcessImageIn_g.CN1_M00_Digital_Ouput_8_Bit_Byte_1 = nodeVar_l[0].leds;
+        AppProcessImageIn_g.CN32_M00_Digital_Ouput_8_Bit_Byte_1 = nodeVar_l[1].leds;
+        AppProcessImageIn_g.CN110_M00_Digital_Ouput_8_Bit_Byte_1 = nodeVar_l[2].leds;
     }
-
-    AppProcessImageIn_g.CN1_M00_Digital_Ouput_8_Bit_Byte_1 = nodeVar_l[0].leds;
-    AppProcessImageIn_g.CN32_M00_Digital_Ouput_8_Bit_Byte_1 = nodeVar_l[1].leds;
-    AppProcessImageIn_g.CN110_M00_Digital_Ouput_8_Bit_Byte_1 = nodeVar_l[2].leds;
 
     return ret;
 }
@@ -273,24 +317,24 @@ The function initializes the process image of the application.
 \return The function returns a tEplKernel error code.
 */
 //------------------------------------------------------------------------------
-static tEplKernel initProcessImage(void)
+static tEplKernel initProcessImage(DWORD inSize_p, DWORD outSize_p)
 {
     tEplKernel      ret = kEplSuccessful;
 
     printf("Initializing process image...\n");
-    printf("Size of input process image: %d\n", (DWORD)sizeof(PI_IN));
-    printf("Size of output process image: %d\n", (DWORD)sizeof (PI_OUT));
+    printf("Size of input process image: %d\n", inSize_p);
+    printf("Size of output process image: %d\n", outSize_p);
 
     AppProcessImageCopyJob_g.m_fNonBlocking = FALSE;
     AppProcessImageCopyJob_g.m_uiPriority = 0;
     AppProcessImageCopyJob_g.m_In.m_pPart = &AppProcessImageIn_g;
     AppProcessImageCopyJob_g.m_In.m_uiOffset = 0;
-    AppProcessImageCopyJob_g.m_In.m_uiSize = sizeof (AppProcessImageIn_g);
+    AppProcessImageCopyJob_g.m_In.m_uiSize = inSize_p;
     AppProcessImageCopyJob_g.m_Out.m_pPart = &AppProcessImageOut_g;
     AppProcessImageCopyJob_g.m_Out.m_uiOffset = 0;
-    AppProcessImageCopyJob_g.m_Out.m_uiSize = sizeof (AppProcessImageOut_g);
+    AppProcessImageCopyJob_g.m_Out.m_uiSize = outSize_p;
 
-    ret = EplApiProcessImageAlloc(sizeof (AppProcessImageIn_g), sizeof (AppProcessImageOut_g), 2, 2);
+    ret = EplApiProcessImageAlloc(inSize_p, outSize_p, 2, 2);
     if (ret != kEplSuccessful)
     {
         return ret;

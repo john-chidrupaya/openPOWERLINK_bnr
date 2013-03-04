@@ -123,6 +123,20 @@ void shutdownApp (void)
     EPL_FREE(pProcessImageOut_g);
 }
 
+
+//------------------------------------------------------------------------------
+/**
+\brief  Run application code
+
+The function sets up the run flag of the application and therefore controls
+if the application runs.
+*/
+//------------------------------------------------------------------------------
+void runApp(BOOL run_p)
+{
+    fAppRun_l = run_p;
+}
+
 //------------------------------------------------------------------------------
 /**
 \brief  Synchronous data handler
@@ -181,6 +195,29 @@ char* getOutputImage(void)
     return (char *)pProcessImageOut_g;
 }
 
+//------------------------------------------------------------------------------
+/**
+\brief  Get size of output image
+
+The function returns the size of the output image
+*/
+//------------------------------------------------------------------------------
+UINT32 getOutputSize(void)
+{
+    return 0;
+}
+
+//------------------------------------------------------------------------------
+/**
+\brief  Get size of output image
+
+The function returns the size of the output image
+*/
+//------------------------------------------------------------------------------
+UINT32 getInputSize(void)
+{
+    return 0;
+}
 
 //============================================================================//
 //            P R I V A T E   F U N C T I O N S                               //
