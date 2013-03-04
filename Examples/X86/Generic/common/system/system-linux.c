@@ -125,9 +125,10 @@ int initSystem(void)
         EPL_DBGLVL_ERROR_TRACE("%s() couldn't set thread scheduling parameters! %d\n",
                 __func__, schedParam.__sched_priority);
     }
-
+#ifdef CONFIG_POWERLINK_USERSTACK
     /* Initialize target specific stuff */
     EplTgtInit();
+#endif
 
 #ifdef SET_CPU_AFFINITY
     {

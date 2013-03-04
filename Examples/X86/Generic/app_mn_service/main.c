@@ -88,8 +88,8 @@ static char* pszCdcFilename_g = "mnobd.cdc";
 static pthread_t eventThreadId;
 static pthread_t syncThreadId;
 
-void *powerlinkEventThread(void * arg);
-void *powerlinkSyncThread(void * arg);
+static void *powerlinkEventThread(void * arg);
+static void *powerlinkSyncThread(void * arg);
 
 #endif
 
@@ -309,14 +309,14 @@ static void loopMain(void)
     if (pthread_create(&eventThreadId, NULL,
                    &powerlinkEventThread, NULL) != 0)
     {
-        goto Exit;
+        return;
     }
 
     // create sync thread
     if (pthread_create(&syncThreadId, NULL,
                    &powerlinkSyncThread, NULL) != 0)
     {
-        goto Exit;
+        return;
     }
 #endif
 
@@ -339,6 +339,35 @@ static void loopMain(void)
 
     return;
 }
+
+
+#ifndef CONFIG_POWERLINK_USERSTACK
+//------------------------------------------------------------------------------
+/**
+\brief  Event handling thread
+*/
+//------------------------------------------------------------------------------
+static void *powerlinkEventThread(void * arg __attribute__((unused)))
+{
+    EplApiProcess();
+
+    return NULL;
+}
+
+//------------------------------------------------------------------------------
+/**
+\brief  Synchronous data thread
+*/
+//------------------------------------------------------------------------------
+static void *powerlinkSyncThread(void * arg __attribute__((unused)))
+{
+    while (1)
+    {
+        processSync();
+    }
+    return NULL;
+}
+#endif
 
 //------------------------------------------------------------------------------
 /**
