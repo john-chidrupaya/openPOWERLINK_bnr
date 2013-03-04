@@ -46,6 +46,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #include <Epl.h>
 #include "local-types.h"
@@ -392,30 +393,31 @@ static BOOL startStack(int argc_p, char** argv_p, UINT32 param_p)
         return FALSE;
     }
 
-    if (argc_p == 3)
+    if (argc_p == 4)
     {
-        strncpy (cdcFile, "mnobd.cdc", 256);
-    }
-    else
-    {
-        strncpy(cdcFile, argv_p[3], 256);
-    }
+        if (realpath(argv_p[3], cdcFile) != NULL)
+        {
+            //strncpy(cdcFile, argv_p[3], 256);
 
-    if ((file = fopen(cdcFile, "r")) == NULL)
-    {
-        printf ("CDC file %s does not exist!\n", argv_p[1]);
-        return FALSE;
-    }
+            if ((file = fopen(cdcFile, "r")) == NULL)
+            {
+                printf ("CDC file %s does not exist!\n", cdcFile);
+                return FALSE;
+            }
+            fclose(file);
 
-    //getPiSize(file, &inSize, &outSize);
-
-    fclose(file);
-
-    ret = EplApiSetCdcFilename(cdcFile);
-    if (ret != kEplSuccessful)
-    {
-        printf("EplApiSetCdcFilename() failed (Error:0x%x!\n", ret);
-        return FALSE;
+            ret = EplApiSetCdcFilename(cdcFile);
+            if (ret != kEplSuccessful)
+            {
+                printf("EplApiSetCdcFilename() failed (Error:0x%x!\n", ret);
+                return FALSE;
+            }
+        }
+        else
+        {
+            printf ("Couldn't get real path of CDC file!\n");
+            return FALSE;
+        }
     }
 
     if (strncmp(argv_p[1], "0x", 2) == 0)
@@ -450,8 +452,12 @@ static BOOL stopStack(int argc_p, char** argv_p, UINT32 param_p)
     EplApiExecNmtCommand(kEplNmtEventSwitchOff);
 
     shutdownApp();
-
+#ifdef CONFIG_POWERLINK_USERSTACK
     return FALSE;
+#else
+    /* kernel stack needs to be completely shut off! */
+    return TRUE;
+#endif
 }
 
 //------------------------------------------------------------------------------
