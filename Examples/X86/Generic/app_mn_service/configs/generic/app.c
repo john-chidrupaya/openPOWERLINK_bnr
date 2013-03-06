@@ -72,7 +72,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 static UINT8*                       pProcessImageIn_g;
 static UINT8*                       pProcessImageOut_g;
 static tEplApiProcessImageCopyJob   AppProcessImageCopyJob_g;
-
+static BOOL                         fAppRun_l;
 
 //------------------------------------------------------------------------------
 // local function prototypes
