@@ -188,6 +188,14 @@ static void printData(char* data_p, UINT32 len_p, tEplObdType type_p)
             printf ("Data: %08Xh (%u)\n", *(UINT32*)data_p, *(UINT32*)data_p);
             break;
 
+        case kEplObdTypInt64:
+            printf ("Data: %0llXh (%lld)\n", *(long long*)data_p, *( long long*)data_p);
+            break;
+
+        case kEplObdTypUInt64:
+            printf ("Data: %0llXh (%llu)\n", *(unsigned long long*)data_p, *(unsigned long long*)data_p);
+            break;
+
         default:
             printf ("Unknown datatype!\n");
             break;
@@ -227,6 +235,12 @@ int parseData(char* dataStr_p, tEplObdType type_p, void* pData_p)
             break;
         case kEplObdTypUInt32:
             *(UINT32*)pData_p = (UINT32)strtoul(dataStr_p, NULL, base);
+            break;
+        case kEplObdTypInt64:
+            *(unsigned long long*)pData_p = (unsigned long long)strtoll(dataStr_p, NULL, base);
+            break;
+        case kEplObdTypUInt64:
+            *(unsigned long long*)pData_p = (unsigned long long)strtoull(dataStr_p, NULL, base);
             break;
         default:
             printf ("Invalid Data Type!\n");
@@ -542,18 +556,18 @@ static BOOL readSdo(int argc_p, char**argv_p, UINT32 param_p)
     parseDataType(argv_p[1], &type, &len);
 
     EPL_MEMSET(&comFinished, 0, sizeof(tEplSdoComFinished));
-    size = sizeof(UINT32);
+    size = sizeof(unsigned long long);
     ret = EplApiReadObject(&comHdl, nodeId, oid, sub, data, &size,
                            kEplSdoTypeAsnd, (void *)0x15f4329a);
     if (ret == kEplSuccessful)
     {
-        printf( "Reading Node:%d, Index:%.4X, SubIndex:%d\n", nodeId, oid, sub);
+        printf( "Reading Node:%d, Index:%.4X, SubIndex:%d size:%d\n", nodeId, oid, sub, size);
         printData(data, size, type);
     }
     else if (ret == kEplApiTaskDeferred)
     {
-        printf( "Reading Node:%d, Index:%.4X, SubIndex:%d ...\n",
-                nodeId, oid, sub);
+        printf( "Reading Node:%d, Index:%.4X, SubIndex:%d size:%d ...\n",
+                nodeId, oid, sub, size);
         if (waitSdoEvent(&comFinished) == 0)
         {
             printf ("Received %d Bytes - AbortCode:0x%08x (%s)\n",
@@ -562,7 +576,7 @@ static BOOL readSdo(int argc_p, char**argv_p, UINT32 param_p)
             if (comFinished.m_uiTransferredByte > 0)
                 printData(data, comFinished.m_uiTransferredByte, type);
             else
-                printf ("Read error!\n");
+                printf ("Read error (0 Bytes)!\n");
         }
         else
             printf ("Read error!\n");
@@ -619,7 +633,7 @@ static BOOL writeSdo(int argc_p, char** argv_p, UINT32 param_p)
     UINT32              nodeId;
     tEplSdoComConHdl    comHdl;
     tEplSdoComFinished  comFinished;
-    UINT32              data;
+    unsigned long long  data;
     tEplObdType         type;
     size_t              len;
 

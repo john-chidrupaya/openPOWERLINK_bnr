@@ -290,7 +290,7 @@ static tEplKernel processStateChangeEvent(tEplApiEventType EventType_p,
         case kEplNmtGsResetConfiguration:
             if (*pCycle_l != 0)
             {
-                ret = EplApiWriteLocalObject(0x1006, 0x00, pCycle_l, sizeof(DWORD));
+                //ret = EplApiWriteLocalObject(0x1006, 0x00, pCycle_l, sizeof(DWORD));
             }
             else
             {
