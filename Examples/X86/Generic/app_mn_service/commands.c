@@ -189,11 +189,11 @@ static void printData(char* data_p, UINT32 len_p, tEplObdType type_p)
             break;
 
         case kEplObdTypInt64:
-            printf ("Data: %0llXh (%lld)\n", *(long long*)data_p, *( long long*)data_p);
+            printf ("Data: %016llXh (%lld)\n", *(INT64*)data_p, *(INT64*)data_p);
             break;
 
         case kEplObdTypUInt64:
-            printf ("Data: %0llXh (%llu)\n", *(unsigned long long*)data_p, *(unsigned long long*)data_p);
+            printf ("Data: %016llXh (%llu)\n", *(UINT64*)data_p, *(UINT64*)data_p);
             break;
 
         default:
@@ -237,10 +237,10 @@ int parseData(char* dataStr_p, tEplObdType type_p, void* pData_p)
             *(UINT32*)pData_p = (UINT32)strtoul(dataStr_p, NULL, base);
             break;
         case kEplObdTypInt64:
-            *(unsigned long long*)pData_p = (unsigned long long)strtoll(dataStr_p, NULL, base);
+            *(INT64*)pData_p = (INT64)strtoll(dataStr_p, NULL, base);
             break;
         case kEplObdTypUInt64:
-            *(unsigned long long*)pData_p = (unsigned long long)strtoull(dataStr_p, NULL, base);
+            *(UINT64*)pData_p = (UINT64)strtoull(dataStr_p, NULL, base);
             break;
         default:
             printf ("Invalid Data Type!\n");
@@ -286,6 +286,12 @@ int writePoData(int offset, char* dataStr_p, tEplObdType type_p)
             break;
         case kEplObdTypUInt32:
             *(UINT32*)(pImage + offset)  = (UINT32)strtoul(dataStr_p, NULL, base);
+            break;
+        case kEplObdTypInt64:
+            *(INT64*)(pImage + offset)  = (INT64)strtoll(dataStr_p, NULL, base);
+            break;
+        case kEplObdTypUInt64:
+            *(UINT64*)(pImage + offset)  = (UINT64)strtoull(dataStr_p, NULL, base);
             break;
         default:
             printf ("Invalid Data Type!\n");

@@ -88,8 +88,8 @@ tCmdDataType typeTbl_l[] =
     {"u16",     kEplObdTypUInt16,           2 },
     {"s32",     kEplObdTypInt32,            4 },
     {"u32",     kEplObdTypUInt32,           4 },
-    {"s64",		kEplObdTypInt64,			8 },
-    {"u64",		kEplObdTypUInt64,			8 },
+    {"s64",     kEplObdTypInt64,            8 },
+    {"u64",     kEplObdTypUInt64,           8 },
     {NULL,      0,                          0 }
 };
 

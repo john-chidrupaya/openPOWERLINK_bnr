@@ -151,6 +151,7 @@ int main(int argc, char **argv)
 {
     tEplKernel                  ret = kEplSuccessful;
     tOptions                    opts;
+    UINT32                      cycleLen;
 
     getOptions(argc, argv, &opts);
 
@@ -160,13 +161,18 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    initEvents(&opts.cycleLen, &fGsOff_l);
+    if (opts.cycleLen == 0)
+        cycleLen = CYCLE_LEN;
+    else
+        cycleLen = opts.cycleLen;
+
+    initEvents(opts.cycleLen, &fGsOff_l);
 
     printf("----------------------------------------------------\n");
     printf("openPOWERLINK MN Service application\n");
     printf("----------------------------------------------------\n");
 
-    if ((ret = initPowerlink(opts.cycleLen, aMacAddr_g)) != kEplSuccessful)
+    if ((ret = initPowerlink(CYCLE_LEN, aMacAddr_g)) != kEplSuccessful)
         goto Exit;
 /*
     if((ret = initApp(opts.inSize, opts.outSize)) != kEplSuccessful)
@@ -421,7 +427,7 @@ static int getOptions(int argc_p, char **argv_p, tOptions* pOpts_p)
     int                         opt;
 
     /* setup default parameters */
-    pOpts_p->cycleLen = CYCLE_LEN;
+    pOpts_p->cycleLen = 0;
     pOpts_p->pLogFile = NULL;
     pOpts_p->inSize = 0;
     pOpts_p->outSize = 0;
