@@ -79,6 +79,9 @@
 #include <oplk/cfm.h>
 #include <oplk/event.h>
 #include <stddef.h>
+#if defined(CONFIG_INCLUDE_NMT_MN)
+#include <user/nmtu.h>
+#endif
 
 //---------------------------------------------------------------------------
 // const defines
@@ -320,6 +323,9 @@ typedef struct
 EPLDLLEXPORT tOplkError oplk_init(tEplApiInitParam* pInitParam_p);
 EPLDLLEXPORT tOplkError oplk_shutdown(void);
 EPLDLLEXPORT tOplkError oplk_execNmtCommand(tNmtEvent NmtEvent_p);
+#if defined(CONFIG_INCLUDE_NMT_MN)
+EPLDLLEXPORT tOplkError oplk_execRemoteNmtCommand(UINT nodeId_p, tNmtCommand  nmtCommand_p);
+#endif
 EPLDLLEXPORT tOplkError oplk_linkObject(UINT objIndex_p, void* pVar_p, UINT* pVarEntries_p,
                                         tObdSize* pEntrySize_p, UINT firstSubindex_p);
 EPLDLLEXPORT tOplkError oplk_readObject(tSdoComConHdl* pSdoComConHdl_p, UINT  nodeId_p, UINT index_p,
