@@ -51,20 +51,20 @@ DialogOpenCdc::DialogOpenCdc(QWidget *parent) :
 	this->ui.setupUi(this);
 }
 
-const char* DialogOpenCdc::GetCdcFileName() const
+const QString& DialogOpenCdc::GetCdcFileName() const
 {
-	if (!this->cdcFile.empty())
-		return this->cdcFile.c_str();
+	if (!this->cdcFile.isEmpty())
+		return this->cdcFile;
 	else
-		return NULL;
+		return "";
 }
 
-const char* DialogOpenCdc::GetXapFileName() const
+const QString& DialogOpenCdc::GetXapFileName() const
 {
-	if (!this->xapFile.empty())
-		return this->xapFile.c_str();
+	if (!this->xapFile.isEmpty())
+		return this->xapFile;
 	else
-		return NULL;
+		return "";
 }
 
 /*******************************************************************************
@@ -135,8 +135,8 @@ void DialogOpenCdc::on_okButton_clicked()
 
 	if (cdcExists && xapExists)
 	{
-		this->cdcFile = this->ui.cdcPath->text().toStdString();
-		this->xapFile = this->ui.xapPath->text().toStdString();
+		this->cdcFile = this->ui.cdcPath->text();
+		this->xapFile = this->ui.xapPath->text();
 
 		emit this->SignalCdcChanged(this->ui.cdcPath->text());
 		emit this->SignalXapChanged(this->ui.xapPath->text());
@@ -146,8 +146,8 @@ void DialogOpenCdc::on_okButton_clicked()
 
 void DialogOpenCdc::on_cancelButton_clicked()
 {
-	this->ui.cdcPath->setText(QString::fromStdString(this->cdcFile));
-	this->ui.xapPath->setText(QString::fromStdString(this->xapFile));
+	this->ui.cdcPath->setText(this->cdcFile);
+	this->ui.xapPath->setText(this->xapFile);
 	this->reject();
 }
 
