@@ -192,9 +192,11 @@ tOplkError oplk_execNmtCommand(tNmtEvent nmtEvent_p)
 #if defined(CONFIG_INCLUDE_NMT_MN)
 //------------------------------------------------------------------------------
 /**
-\brief  Execute a NMT command
+\brief  Executes an NMT command
 
-The function executes a NMT command
+The function executes a NMT command, i.e. post the NMT event to the NMT module.
+NMT commands which are not appropriate in the current NMT state are silently
+ignored.
 
 \param  nodeId_p              Id of the node which receives NMT command
 \param  nmtCommand_p          NMT command to send.
@@ -206,14 +208,45 @@ The function executes a NMT command
 //------------------------------------------------------------------------------
 tOplkError oplk_execRemoteNmtCommand(UINT nodeId_p, tNmtCommand  nmtCommand_p)
 {
-	if ((nodeId_p == 0) || (nodeId_p > 255) )
+    if (nodeId_p > 255)
+        return kErrorApiInvalidParam;
+
+    // Local node shall use oplk_execNmtCommand(tNmtEvent);
+    if (nodeId_p == 0 || nodeId_p == obd_getNodeId())
     {
-		return kErrorApiInvalidParam;
-	}
-	else
-	{
-		return nmtmnu_sendNmtCommand(nodeId_p, nmtCommand_p);
-	}
+        tNmtEvent nmtEvent;
+        // Convert tNmtCommand to tNmtEvent.
+        switch (nmtCommand_p)
+        {
+            case kNmtCmdStopNode:
+                nmtEvent = kNmtEventSwitchOff;
+                break;
+
+            case kNmtCmdResetNode:
+                nmtEvent = kNmtEventResetNode;
+                break;
+
+            case kNmtCmdResetCommunication:
+                nmtEvent = kNmtEventResetCom;
+                break;
+
+            case kNmtCmdResetConfiguration:
+                nmtEvent = kNmtEventResetConfig;
+                break;
+
+            case kNmtCmdSwReset:
+                nmtEvent = kNmtEventSwReset;
+                break;
+
+            default:
+                return kErrorNmtInvalidParam;
+        }
+        return oplk_execNmtCommand(nmtEvent);
+    }
+    else
+    {
+        return nmtmnu_sendNmtCommand(nodeId_p, nmtCommand_p);
+    }
 }
 #endif
 //------------------------------------------------------------------------------
