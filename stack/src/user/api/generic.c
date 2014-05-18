@@ -245,7 +245,31 @@ tOplkError oplk_execRemoteNmtCommand(UINT nodeId_p, tNmtCommand  nmtCommand_p)
     }
     else
     {
-        return nmtmnu_sendNmtCommand(nodeId_p, nmtCommand_p);
+        tOplkError ret = kErrorOk;
+        BOOL releaseCmd = TRUE;
+
+        ret = oplk_writeLocalObject(0x1F9F, 0x03, &nodeId_p, 0x01);
+        if (ret != kErrorOk)
+        {
+            TRACE("%s() Error: 1F9F/03 : %x\n", __func__, ret);
+            return ret;
+        }
+
+        ret = oplk_writeLocalObject(0x1F9F, 0x02, &nmtCommand_p, 0x01);
+        if (ret != kErrorOk)
+        {
+            TRACE("%s() Error: 1F9F/02 : %x\n", __func__, ret);
+            return ret;
+        }
+
+        // ret = oplk_writeLocalObject(0x1F9F, 0x04, &value, sizeof(value));
+        //if (ret != kErrorOk)
+        //{
+        //  TRACE("%s() Error: 1F9F/04 : %x\n", __func__, ret);
+        //   return ret;
+        //}
+
+        return oplk_writeLocalObject(0x1F9F, 0x01, &releaseCmd, 0x01);
     }
 }
 #endif
