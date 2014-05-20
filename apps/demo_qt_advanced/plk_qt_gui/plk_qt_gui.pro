@@ -11,8 +11,6 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = plk_qt_gui
 TEMPLATE = app
 
-unix:!macx: LIBS += -lpcap
-
 ################################TargetInstallPath#######################################
 CONFIG(release, debug|release) {
 	DESTDIR = ../plk_qt_gui/release
@@ -145,3 +143,5 @@ CONFIG(debug, debug|release): DEPENDPATH += $$PWD/../plk_qt_api/debug
 
 win32: DEPENDPATH += $$PWD/../../../stack/lib/windows/x86 \
 			  $$PWD/../../../contrib/pcap/windows/WpdPack/Lib
+
+unix:!macx: LIBS += -lpcap -lrt -lpthread
