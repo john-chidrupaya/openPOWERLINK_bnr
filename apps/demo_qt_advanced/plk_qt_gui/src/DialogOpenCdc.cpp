@@ -53,18 +53,12 @@ DialogOpenCdc::DialogOpenCdc(QWidget *parent) :
 
 const QString& DialogOpenCdc::GetCdcFileName() const
 {
-	if (!this->cdcFile.isEmpty())
-		return this->cdcFile;
-	else
-		return "";
+	return this->cdcFile;
 }
 
 const QString& DialogOpenCdc::GetXapFileName() const
 {
-	if (!this->xapFile.isEmpty())
-		return this->xapFile;
-	else
-		return "";
+	return this->xapFile;
 }
 
 /*******************************************************************************
