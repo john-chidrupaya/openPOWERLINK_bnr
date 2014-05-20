@@ -138,8 +138,8 @@ void DialogOpenCdc::on_okButton_clicked()
 		this->cdcFile = this->ui.cdcPath->text();
 		this->xapFile = this->ui.xapPath->text();
 
-		emit this->SignalCdcChanged(this->ui.cdcPath->text());
-		emit this->SignalXapChanged(this->ui.xapPath->text());
+		emit this->SignalCdcChanged(this->cdcFile);
+		emit this->SignalXapChanged(this->xapFile);
 		this->accept();
 	}
 }
