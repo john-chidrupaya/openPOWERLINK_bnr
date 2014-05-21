@@ -2,7 +2,7 @@
 ********************************************************************************
 \file   SdoTransferJob.h
 
-\brief  Container for holding input parameters used for SDO transfers
+\brief  Container for holding input parameters used for SDO transfers  // XXX John: Container for input ...
 
 \author Ramakrishnan Periyakaruppan
 
