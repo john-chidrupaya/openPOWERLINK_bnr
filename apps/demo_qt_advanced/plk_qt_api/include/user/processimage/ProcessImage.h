@@ -49,7 +49,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /**
  * \brief ProcessImage is a pure abstract base class which provides the
- * methods common to all the ProcessImage channels.
+ * methods common to all the ProcessImage channels.  // XXX John: How to use this??
  *
  */
 class PLKQTAPI_EXPORT ProcessImage
