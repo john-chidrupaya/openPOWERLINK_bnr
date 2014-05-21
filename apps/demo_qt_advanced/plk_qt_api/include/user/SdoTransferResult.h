@@ -49,6 +49,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * \brief This class contains the result of the Remote node SDO Transfer.
  * \note The data will be available in the SdoTransferJob instance used for this particular SdoTransfer.
  */
+   // XXX John: The names SdoTransferJob and SdoTransferResult are not clear. It'll be better if atlease a brief usage details is there
 class PLKQTAPI_EXPORT SdoTransferResult
 {
 public:
