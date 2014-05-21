@@ -50,7 +50,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "user/processimage/IECDataType.h"
 
 /**
- * \brief This class provides an instance of an individual channel in the ProcessImage.
+ * \brief This class provides an instance of an individual channel in the ProcessImage.  // XXX John: not necessary but: "along with attributes and access(getter and setter) methods"
  *
  */
 class PLKQTAPI_EXPORT Channel
