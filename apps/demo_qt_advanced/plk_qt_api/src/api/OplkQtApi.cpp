@@ -428,7 +428,7 @@ tOplkError OplkQtApi::TransferObject(const SdoTransferJob& sdoTransferJob,
 		// Non-Local OD access: error case
 
 		// Delete the receiver context.
-		if (!receiverContext)
+		if (!receiverContext)  // XXX John: just delete, if's logic is also reverse
 			delete receiverContext;
 
 		qDebug("Remote OD access, disconnecting signal.");
@@ -443,7 +443,7 @@ tOplkError OplkQtApi::TransferObject(const SdoTransferJob& sdoTransferJob,
 			qDebug("Disconnect failed !");
 			return kErrorApiInvalidParam;
 		}
-		qDebug("Disconnected success");
+		qDebug("Disconnected success");  // XXX John: line after }
 	}
 
 	return oplkRet;
@@ -484,7 +484,7 @@ tOplkError OplkQtApi::AllocateProcessImage(ProcessImageIn& in,
 tOplkError OplkQtApi::SetCdc(const BYTE* cdcBuffer, const UINT size)
 {
 	tOplkError oplkRet = oplk_setCdcBuffer((BYTE*) cdcBuffer, size);
-	OplkQtApi::cdcSet = (oplkRet == kErrorOk);
+	OplkQtApi::cdcSet = (oplkRet == kErrorOk);  // XXX John: is this recommended?
 	return oplkRet;
 }
 
@@ -498,7 +498,7 @@ tOplkError OplkQtApi::SetCdc(const std::string& cdcFileName)
 tOplkError OplkQtApi::SetCycleTime(const ULONG cycleTime)
 {
 	return (oplk_writeLocalObject(0x1006, 0x00, (void*)&cycleTime, 4));
-	// If this is a demo CN. It has to do remote SDO write?.
+	// If this is a demo CN. It has to do remote SDO write?.  // XXX John: is this required anymore in Release
 }
 
 ULONG OplkQtApi::GetSyncWaitTime()
