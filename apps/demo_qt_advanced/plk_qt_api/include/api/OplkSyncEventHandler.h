@@ -99,7 +99,7 @@ private:
 
 	ULONG sleepTime; ///< Thread sleep time in micro seconds.
 
-	OplkSyncEventHandler();
+	OplkSyncEventHandler();  // XXX John: no descrption for private member functions, is it ?!
 	OplkSyncEventHandler(const OplkSyncEventHandler& syncThread);
 	OplkSyncEventHandler& operator=(const OplkSyncEventHandler& syncThread);
 
