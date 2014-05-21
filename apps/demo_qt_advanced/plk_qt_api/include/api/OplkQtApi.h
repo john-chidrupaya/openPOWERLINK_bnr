@@ -130,13 +130,13 @@ public:
 	/**
 	 * \brief   Sets the pointer to the CDC buffer.
 	 *
-	 * \param[in] cdcBuffer  Buffer to the CDC contents.
+	 * \param[in] cdcBuffer  Buffer to the CDC contents.   // XXX John: pointer to the address of buffer having ..
 	 * \param[in] size       Size of the buffer in bytes.
 	 * \return Returns a tOplkError error code.
 	 *
 	 * \note This function always has precedence over the
 	 *       OplkQtApi::SetCdc(const std:string&), if none of these two
-	 *       functions are called, the stack is set to look for "mnobd.cdc" in the
+	 *       functions are called, the stack is set to look for "mnobd.cdc" in the  // XXX John: this is Helpful
 	 *       working directory.
 	 */
 	static tOplkError SetCdc(const BYTE* cdcBuffer, const UINT size);
@@ -155,7 +155,7 @@ public:
 
 	/**
 	 * \brief   Sets the Cycle time in micro seconds.
-	 * \param[in] cycleTime  The requested cycle time.
+	 * \param[in] cycleTime  The requested cycle time.  // XXX John: in us
 	 * \return Returns a tOplkError error code.
 	 *
 	 * \note The user has execute an NMT command 'kNmtCmdSwReset' to activate the new cycle time.
@@ -163,14 +163,14 @@ public:
 	static tOplkError SetCycleTime(const ULONG cycleTime);
 
 	/**
-	 * \brief Registers for the node found events of the stack.
+	 * \brief Registers for the node found events of the stack.  // XXX John: from the stack
 	 *
-	 * \param[in] receiver          Object to handle the event.
-	 * \param[in] receiverFunction  Member function to handle the event.
+	 * \param[in] receiver          Object to handle the event.  // XXX John: which object
+	 * \param[in] receiverFunction  Member function to handle the event.  // XXX John: member of ?
 	 * \retval true   Registration successful.
 	 * \retval false  Registration not successful.
 	 *
-	 * \see OplkEventHandler::SignalNodeFound(const int)
+	 * \see OplkEventHandler::SignalNodeFound(const int)   // XXX John: this is helpful
 	 */
 	static bool RegisterNodeFoundEventHandler(const QObject& receiver,
 									const QMetaMethod& receiverFunction);
@@ -178,7 +178,7 @@ public:
 	/**
 	 * \brief Unregisters the receiver from receiving the node found events of stack.
 	 *
-	 * \param[in] receiver          Object to handle the event.
+	 * \param[in] receiver          Object to handle the event.  // XXX John: Same as above
 	 * \param[in] receiverFunction  Member function to handle the event.
 	 * \retval true   Unregistration successful.
 	 * \retval false  Unregistration not successful.
@@ -306,7 +306,7 @@ public:
 	static ULONG GetSyncWaitTime();
 
 	/**
-	 * \brief Sets the ProcessImage sync to wait for the give time in microseconds.
+	 * \brief Sets the ProcessImage sync to wait for the given time in microseconds.
 	 *
 	 * \param[in] sleepTime Processimage sync thread sleep time in micro seconds.
 	 *
@@ -378,7 +378,7 @@ private:
 	OplkQtApi(const OplkQtApi& api);
 	OplkQtApi& operator=(const OplkQtApi& api);
 
-	static void SetInitParam();
+	static void SetInitParam();  // XXX John: ennada
 };
 
 #endif //  _OPLK_QT_API_H_
