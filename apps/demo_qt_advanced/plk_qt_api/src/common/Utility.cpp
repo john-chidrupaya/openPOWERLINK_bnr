@@ -47,7 +47,7 @@ bool CompareCaseInsensitive(const std::string& str1, const std::string& str2)
 	if (str1.length() != str2.length())
 	{
 		return false;
-	}
+	}  // XXX John: line after }
 	for (UINT i = 0; i < str1.length(); ++i)
 	{
 		if (std::toupper(str1[i]) != std::toupper(str2[i]))
@@ -55,5 +55,5 @@ bool CompareCaseInsensitive(const std::string& str1, const std::string& str2)
 			return false;
 		}
 	}
-	return true;
+	return true;  // XXX John: line after }
 }
