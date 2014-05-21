@@ -52,7 +52,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * \brief Pure abstract base class provides the definitions used to parse the
  * xml(xap.xml) contents.
  *
- * The user can request the any type of parser available in
+ * The user can request any type of parser available in
  * ProcessImageParserType::ProcessImageParserType to parse the xml.
  */
 class PLKQTAPI_EXPORT ProcessImageParser
@@ -72,7 +72,7 @@ public:
 	/**
 	 * \brief   Parses the buffer containing the ProcessImage xml description.
 	 *
-	 * \note If any exception has occurred the you have to request a new parser
+	 * \note If any exception has occurred then you have to request a new parser
 	 * with NewInstance() and "delete" the old one.
 	 *
 	 * \param[in] xmlDescription  Pointer to the buffer containing the xml description.
@@ -83,7 +83,7 @@ public:
 
 	/**
 	 * \param[in] direction  The ProcessImage direction
-	 * \return Returns the reference to the requested ProcessImage instance.
+	 * \return Returns the reference to the requested ProcessImage instance.  // XXX John: PI instance for the requested direction
 	 */
 	ProcessImage& GetProcessImage(const Direction::Direction direction);
 
