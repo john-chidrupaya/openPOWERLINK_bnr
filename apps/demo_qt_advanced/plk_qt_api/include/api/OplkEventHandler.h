@@ -1,11 +1,11 @@
 /**
 ********************************************************************************
-\file   OplkEventHandler.h
+\file   OplkEventHandler.h  // XXX John: oplk..
 
-\brief  Design of a event handler that uses QThread to
+\brief  Design of a event handler that uses QThread to  // XXX John: See the C file for the comments on this; Dfinition instead of Design ?!!
 		communicate openPOWERLINK asynchronous callback events via QT signals
 
-\author Ramakrishnan Periyakaruppan
+\author Ramakrishnan Periyakaruppan                      // XXX John: in_module ?!
 
 \copyright (c) 2014, Kalycito Infotech Private Limited
 					 All rights reserved.
@@ -47,18 +47,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <oplk/nmt.h>
 #include <oplkcfg.h>
 
-#include "api/ReceiverContext.h"
+#include "api/ReceiverContext.h"                               // XXX John: <>
 #include "user/SdoTransferResult.h"
 
 /**
- * \brief Thread used to receive openPOWERLINK-Stack asynchronous callback events.
+ * \brief Thread used to receive openPOWERLINK-Stack asynchronous callback events.  // XXX John: 1. Thread which receives or receiver thread ...
+ *                                                                                               2. No full stop ?!
  *
  * Class provides the interface to the OplkQtApi to handle openPOWERLINK stack events via Qt Signals
  *
- * \note This class is intended to _only_ be used by OplkQtApi
+ * \note This class is intended to _only_ be used by OplkQtApi    // XXX John: to be used _only_ by
  * \note The signals can be received by registering through the OplkQtApi::Register***() functions
  */
-class OplkEventHandler : public QThread
+class OplkEventHandler : public QThread     // XXX John: I do not have the idea of the convention used for class declaration, but it might have to be oplk..
 {
 	Q_OBJECT
 
@@ -67,34 +68,35 @@ protected:
 
 private:
 
-	friend class OplkQtApi;
+	friend class OplkQtApi;            // XXX John: oplk...
 
-	OplkEventHandler();
-	OplkEventHandler(const OplkEventHandler& eventHandler);
-	OplkEventHandler& operator=(const OplkEventHandler& eventHandler);
+	OplkEventHandler();                // XXX John: oplk..
+	OplkEventHandler(const OplkEventHandler& eventHandler);  // XXX John: same
+	OplkEventHandler& operator=(const OplkEventHandler& eventHandler);  // XXX John: same
 
-	QMutex          mutex;
+	QMutex          mutex;          
 	QWaitCondition  nmtGsOffCondition;
 
 	/**
-	 * \return Returns the instance of the class
+	 * \return Returns the instance of the class  // XXX John: \brief getter function for oplk.. class instance
 	 */
-	static OplkEventHandler& GetInstance();
+	static OplkEventHandler& GetInstance();  // XXX John: same
 
 	/**
 	 * \brief   The main event callback function
-	 *          Accessed as a function pointer from the stack.
-	 * \param[in] eventType  Type of the event
+	 *          Accessed as a function pointer from the stack.   // XXX John: What does it do
+	 * \param[in] eventType  Type of the event   // XXX John: which event
 	 * \param[in] eventArg   Pointer to union which describes the event in detail
 	 * \param[in] userArg    User specific argument
-	 * \return Returns a tOplkError error code.
+	 * \return Returns a tOplkError error code.   // XXX John: A little more description about the parameters. Its an API.
+	 *                                            // XXX John: \return as per David's comments 
 	 */
-	static tOplkError AppCbEvent(tOplkApiEventType eventType,
-								 tOplkApiEventArg* eventArg,
-								 void* userArg);
+	static tOplkError AppCbEvent(tOplkApiEventType eventType,  // XXX John: check the CPP file
+								 tOplkApiEventArg* eventArg,   // XXX John: The usage of tabs to align the arguements has the adverse effect of 
+								 void* userArg);               // misaligning them when you change the tab width
 
 	/**
-	 * \return Returns the address of event callback function
+	 * \return Returns the address of event callback function   // XXX John: \brief
 	 */
 	tOplkApiCbEvent GetAppEventCbFunc(void);
 
@@ -106,34 +108,34 @@ private:
 	/**
 	 * \brief   Process the NMT state change events of the local node.
 	 *
-	 * \param[in] nmtStateChange  Details of the NMT state changes
-	 * \param[in] userArg         User specific argument
-	 * \return Returns a tOplkError error code.
+	 * \param[in] nmtStateChange  Details of the NMT state changes   // XXX John: What?
+	 * \param[in] userArg         User specific argument  // XXX John: From where and why ? How it'd be used/passed
+	 * \return Returns a tOplkError error code.  // XXX John: as per David
 	 */
 	tOplkError ProcessNmtStateChangeEvent(tEventNmtStateChange* nmtStateChange,
 										  void* userArg);
 
 	/**
-	 * \brief   Process critical error events of the stack.
+	 * \brief   Process critical error events of the stack.    // XXX John: generated from the stack
 	 *
-	 * \param[in] internalError  Details of the critical error events.
-	 * \param[in] userArg        User specific argument.
-	 * \return Returns a tOplkError error code.
+	 * \param[in] internalError  Details of the critical error events.//----------
+	 * \param[in] userArg        User specific argument.              // XXX John: Same as before
+	 * \return Returns a tOplkError error code.                       //----------
 	 */
 	tOplkError ProcessCriticalErrorEvent(tEventError* internalError,
 										 void* userArg);
 
 	/**
-	 * \brief   Process warning events of the stack.
+	 * \brief   Process warning events of the stack.      // XXX John: from the stack
 	 *
-	 * \param[in] internalError  Details of the warning events.
-	 * \param[in] userArg        User specific argument.
-	 * \return Returns a tOplkError error code.
+	 * \param[in] internalError  Details of the warning events.  //----------
+	 * \param[in] userArg        User specific argument.         // XXX John: Same 
+	 * \return Returns a tOplkError error code.                  //---------- 
 	 */
 	tOplkError ProcessWarningEvent(tEventError* internalError, void* userArg);
 
 	/**
-	 * \brief   Process history events generated by the stack.
+	 * \brief   Process history events generated by the stack.  // XXX John: Same
 	 *
 	 * \param[in] historyEntry  Details of the history events
 	 * \param[in] userArg       User specific argument
@@ -146,7 +148,7 @@ private:
 	 * \brief   Process events generated by the stack with respect to the remote nodes.
 	 *
 	 * \param[in] nodeEvent  Details of the node events.
-	 * \param[in] userArg    User specific argument.
+	 * \param[in] userArg    User specific argument.  // XXX John: Consistency with the convention: use of full-stops
 	 * \return Returns a tOplkError error code.
 	 */
 	tOplkError ProcessNodeEvent(tOplkApiEventNode* nodeEvent, void* userArg);
@@ -154,7 +156,7 @@ private:
 	/**
 	 * \brief   Process the events generated during the SDO transfer
 	 *
-	 * \note The sdoEvent->pUserArg will contain the data sent in the userArg in the SDO calling function.
+	 * \note The sdoEvent->pUserArg will contain the data sent in the userArg in the SDO calling function.   // XXX John: which is the calling function
 	 * \param[in] sdoEvent  Details of the SDO events occurred.
 	 * \param[in] userArg   User specific argument
 	 * \return Returns a tOplkError error code.
@@ -162,9 +164,9 @@ private:
 	tOplkError ProcessSdoEvent(tSdoComFinished* sdoEvent, void* userArg);
 
 	/**
-	 * \brief   Process CFM progress events
+	 * \brief   Process CFM progress events   // XXX John: Its evident from the Name. Some explanation, atleast whats CFM progress in the next line
 	 *
-	 * \param[in] cfmProgress  Details of the CFM progress events.
+	 * \param[in] cfmProgress  Details of the CFM progress events.  // XXX John: Used as a return from the calling function ?!!
 	 * \param[in] userArg      User specific argument.
 	 * \return Returns a tOplkError error code.
 	 */
@@ -172,7 +174,7 @@ private:
 									   void* userArg);
 
 	/**
-	 * \brief   Process CFM result events
+	 * \brief   Process CFM result events  // XXX John: Same all through
 	 *
 	 * \param[in] cfmResult  Result of the CFM event occurred.
 	 * \param[in] userArg    User specific argument.
@@ -182,7 +184,7 @@ private:
 									 void* userArg);
 
 	/**
-	 * \brief[in] Process the PDO change events.
+	 * \brief[in] Process the PDO change events.  // XXX John: Same all through
 	 *
 	 * \param[in] pdoChange Details of the PDO change event.
 	 * \param[in] userArg      User specific argument.
@@ -195,7 +197,7 @@ private:
 	 * \brief   Triggers a signal OplkEventHandler::SignalLocalNodeStateChanged
 	 * when there is a change of the state of local node.
 	 *
-	 * \param[in] nmtState  The new state to which the local node has changed to.
+	 * \param[in] nmtState  The new state to which the local node has changed to.  // XXX John: this is a benchmark
 	 */
 	void TriggerLocalNodeStateChanged(tNmtState nmtState);
 
@@ -244,7 +246,7 @@ private:
 
 signals:
 	/**
-	 * \brief   This signal is emitted when the NMT state of the local node changes.
+	 * \brief   This signal is emitted when the NMT state of the local node changes.  // XXX John: Associated trigger
 	 *
 	 * \param[in] nmtState  The new NMT state to which it has changed.
 	 */
