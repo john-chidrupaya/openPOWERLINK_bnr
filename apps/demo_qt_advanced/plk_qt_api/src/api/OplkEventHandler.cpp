@@ -1,13 +1,16 @@
 /**
 ********************************************************************************
-\file   OplkEventHandler.cpp
+\file   OplkEventHandler.cpp // XXX John: file name should start with small letter ?!
 
-\brief  Implementation of a event handler class that uses QThread to
-		communicate openPOWERLINK stack events via QT signals
+\brief  Implementation of a event handler class that uses QThread to   // XXX John: 1. an event
+		communicate openPOWERLINK stack events via QT signals  //           2. brief need not have a big description:
+		                                                       // just the usage not the mechanism, 
+		                                                       // if you do not have multiple files providing multiple mechanisms
+		                                                       // It'd be better to move the extra description to the line below
 
 Handles the events from the eventcallback function from the stack and
 triggers the signals to the receiver who has requested for it.
-
+                                                                       // XXX John: Do you require in_module ?!
 \author Ramakrishnan Periyakaruppan
 
 \copyright (c) 2014, Kalycito Infotech Private Limited
@@ -44,21 +47,21 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QMetaMethod>
 #include <oplk/debugstr.h>
 
-#include "api/OplkEventHandler.h"
-
+#include "api/OplkEventHandler.h"        // XXX John: 1. use of <> if the path is included in the CMake
+                                         //           2. And the file name
 /*******************************************************************************
 * PUBLIC Functions
 *******************************************************************************/
-void OplkEventHandler::AwaitNmtGsOff()
+void OplkEventHandler::AwaitNmtGsOff()        // XXX John: function name(and file name, variable name) starts with lower case letter
 {
 	OplkEventHandler::mutex.lock();
 	OplkEventHandler::nmtGsOffCondition.wait(&(OplkEventHandler::mutex));
 	OplkEventHandler::mutex.unlock();
 }
 
-tOplkApiCbEvent OplkEventHandler::GetAppEventCbFunc(void)
+tOplkApiCbEvent OplkEventHandler::GetAppEventCbFunc(void) // XXX John: getApp...
 {
-	return AppCbEvent;
+	return AppCbEvent;  // XXX John: app..
 }
 
 void OplkEventHandler::run()
@@ -72,11 +75,12 @@ void OplkEventHandler::run()
 /*******************************************************************************
 * PRIVATE Functions
 *******************************************************************************/
-OplkEventHandler::OplkEventHandler()
+OplkEventHandler::OplkEventHandler()  // XXX John: 1. oplk..
+                                      //           2. Isn't it preferable that you use a verb as a function name as handleOplkEvent
 {
 }
 
-OplkEventHandler& OplkEventHandler::GetInstance()
+OplkEventHandler& OplkEventHandler::GetInstance() // XXX John: get..
 {
 	// Local static object - Not thread safe
 	static OplkEventHandler instance;
@@ -85,7 +89,8 @@ OplkEventHandler& OplkEventHandler::GetInstance()
 
 tOplkError OplkEventHandler::AppCbEvent(tOplkApiEventType eventType,
 								tOplkApiEventArg* eventArg,
-								void* userArg)
+								void* userArg)  // XXX John: I understand that its the same as the stack and you tried not to break the continuity
+								                // but will it be better if you renamed the function? AppCbEvent does not convey anything
 {
 	tOplkError oplkRet = kErrorGeneralError;
 
