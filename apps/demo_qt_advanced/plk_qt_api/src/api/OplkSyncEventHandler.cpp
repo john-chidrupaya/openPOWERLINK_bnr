@@ -7,7 +7,7 @@
 
 \todo
 		- Implement mutex and wait condition before the thread terminates it.
-		- Export the refresh-rate as a settings
+		- Export the refresh-rate as a settings   // XXX John: user configurable?
 
 \author Ramakrishnan Periyakaruppan
 
@@ -59,7 +59,7 @@ OplkSyncEventHandler::~OplkSyncEventHandler()
 void OplkSyncEventHandler::run()
 {
 	tOplkError oplkRet = kErrorGeneralError;
-	for (;;)
+	for (;;)  // XXX John: what about while(1)
 	{
 		if (this->currentThread()->isInterruptionRequested())
 			return;
